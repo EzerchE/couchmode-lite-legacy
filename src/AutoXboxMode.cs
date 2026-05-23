@@ -19,7 +19,8 @@ namespace AutoXboxMode
     static class Program
     {
         public const string AppName = "AutoXboxMode";
-        public const string Version = "1.1.0";
+        public const string Version = "1.2.0";
+        public const string RepoUrl = "https://github.com/EzerchE/AutoXboxMode";
 
         [STAThread]
         static void Main()
@@ -231,6 +232,7 @@ namespace AutoXboxMode
         public bool EnableOnConnect = true;
         public bool DisableOnDisconnect = true;
         public bool StartWithWindows = false;
+        public bool DebugLogging = false;
 
         static string Dir
         {
@@ -261,6 +263,7 @@ namespace AutoXboxMode
                         if (k == "EnableOnConnect") s.EnableOnConnect = (v == "1");
                         else if (k == "DisableOnDisconnect") s.DisableOnDisconnect = (v == "1");
                         else if (k == "StartWithWindows") s.StartWithWindows = (v == "1");
+                        else if (k == "DebugLogging") s.DebugLogging = (v == "1");
                     }
                 }
             }
@@ -277,6 +280,7 @@ namespace AutoXboxMode
                 sb.AppendLine("EnableOnConnect=" + (EnableOnConnect ? "1" : "0"));
                 sb.AppendLine("DisableOnDisconnect=" + (DisableOnDisconnect ? "1" : "0"));
                 sb.AppendLine("StartWithWindows=" + (StartWithWindows ? "1" : "0"));
+                sb.AppendLine("DebugLogging=" + (DebugLogging ? "1" : "0"));
                 File.WriteAllText(ConfigPath, sb.ToString());
             }
             catch { }
@@ -286,6 +290,16 @@ namespace AutoXboxMode
     static class Log
     {
         static readonly object gate = new object();
+
+        // When false, only essential lines are written (start, mode changes, exit,
+        // warnings). When true, verbose diagnostic detail is added too.
+        public static bool Verbose = false;
+
+        public static void Debug(string msg)
+        {
+            if (Verbose) Write(msg);
+        }
+
         public static void Write(string msg)
         {
             try
@@ -347,6 +361,7 @@ namespace AutoXboxMode
         public TrayContext()
         {
             settings = Settings.Load();
+            Log.Verbose = settings.DebugLogging;
             Startup.Apply(settings.StartWithWindows); // keep registry in sync
 
             sink = new Control();
@@ -366,6 +381,7 @@ namespace AutoXboxMode
             menu.Items.Add(miActive);
             menu.Items.Add(new ToolStripMenuItem("Settings…", null, OnSettings));
             menu.Items.Add(new ToolStripMenuItem("Open Log File", null, OnOpenLog));
+            menu.Items.Add(new ToolStripMenuItem("About…", null, OnAbout));
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(new ToolStripMenuItem("Exit", null, OnExit));
 
@@ -412,12 +428,12 @@ namespace AutoXboxMode
 
             if (count > 0 && prevCount == 0 && settings.EnableOnConnect)
             {
-                Log.Write("Controller connected -> entering Xbox mode.");
+                Log.Debug("Controller connected -> entering Xbox mode.");
                 RunSetMode(true);
             }
             else if (count == 0 && prevCount > 0 && settings.DisableOnDisconnect)
             {
-                Log.Write("Controller disconnected -> exiting Xbox mode.");
+                Log.Debug("Controller disconnected -> exiting Xbox mode.");
                 RunSetMode(false);
             }
 
@@ -459,7 +475,7 @@ namespace AutoXboxMode
             {
                 try
                 {
-                    Log.Write("First attempt failed, launching Xbox app and retrying...");
+                    Log.Debug("First attempt failed, launching Xbox app and retrying...");
                     Process.Start("xbox:");
                 }
                 catch { }
@@ -498,7 +514,7 @@ namespace AutoXboxMode
         {
             automationOn = !automationOn;
             miActive.Checked = automationOn;
-            Log.Write("Automation " + (automationOn ? "resumed." : "paused."));
+            Log.Debug("Automation " + (automationOn ? "resumed." : "paused."));
             if (automationOn) prevCount = Native.ControllerCount();
             UpdateIcon();
         }
@@ -511,8 +527,9 @@ namespace AutoXboxMode
                 {
                     settings = f.Result;
                     settings.Save();
+                    Log.Verbose = settings.DebugLogging;
                     Startup.Apply(settings.StartWithWindows);
-                    Log.Write("Settings saved.");
+                    Log.Debug("Settings saved.");
                 }
             }
         }
@@ -522,10 +539,19 @@ namespace AutoXboxMode
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Settings.LogPath));
-                if (!File.Exists(Settings.LogPath)) File.WriteAllText(Settings.LogPath, "");
-                Process.Start(Settings.LogPath);
+                if (!File.Exists(Settings.LogPath))
+                    File.WriteAllText(Settings.LogPath, "(log is empty - enable Debug logging in Settings for detail)" + Environment.NewLine);
+                // Open with Notepad: a .log file has no default association, so
+                // launching it directly fails with "path not found".
+                Process.Start("notepad.exe", "\"" + Settings.LogPath + "\"");
             }
             catch { }
+        }
+
+        void OnAbout(object sender, EventArgs e)
+        {
+            using (AboutForm f = new AboutForm())
+                f.ShowDialog();
         }
 
         void OnExit(object sender, EventArgs e)
@@ -566,6 +592,7 @@ namespace AutoXboxMode
         readonly CheckBox cbConnect;
         readonly CheckBox cbDisconnect;
         readonly CheckBox cbStartup;
+        readonly CheckBox cbDebug;
         public Settings Result;
 
         public SettingsForm(Settings current)
@@ -577,7 +604,7 @@ namespace AutoXboxMode
             StartPosition = FormStartPosition.CenterScreen;
             MaximizeBox = false;
             MinimizeBox = false;
-            ClientSize = new Size(360, 168);
+            ClientSize = new Size(360, 196);
 
             cbConnect = new CheckBox();
             cbConnect.Text = "Enter Xbox mode when a controller connects";
@@ -594,20 +621,26 @@ namespace AutoXboxMode
             cbStartup.Checked = current.StartWithWindows;
             cbStartup.SetBounds(16, 72, 330, 22);
 
+            cbDebug = new CheckBox();
+            cbDebug.Text = "Debug logging (verbose activity log)";
+            cbDebug.Checked = current.DebugLogging;
+            cbDebug.SetBounds(16, 100, 330, 22);
+
             Button ok = new Button();
             ok.Text = "Save";
             ok.DialogResult = DialogResult.OK;
-            ok.SetBounds(176, 120, 80, 28);
+            ok.SetBounds(176, 148, 80, 28);
             ok.Click += OnSave;
 
             Button cancel = new Button();
             cancel.Text = "Cancel";
             cancel.DialogResult = DialogResult.Cancel;
-            cancel.SetBounds(264, 120, 80, 28);
+            cancel.SetBounds(264, 148, 80, 28);
 
             Controls.Add(cbConnect);
             Controls.Add(cbDisconnect);
             Controls.Add(cbStartup);
+            Controls.Add(cbDebug);
             Controls.Add(ok);
             Controls.Add(cancel);
             AcceptButton = ok;
@@ -620,7 +653,62 @@ namespace AutoXboxMode
             s.EnableOnConnect = cbConnect.Checked;
             s.DisableOnDisconnect = cbDisconnect.Checked;
             s.StartWithWindows = cbStartup.Checked;
+            s.DebugLogging = cbDebug.Checked;
             Result = s;
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    //  About dialog
+    // ---------------------------------------------------------------------
+    class AboutForm : Form
+    {
+        public AboutForm()
+        {
+            Text = "About " + Program.AppName;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            StartPosition = FormStartPosition.CenterScreen;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            ClientSize = new Size(380, 180);
+
+            Label name = new Label();
+            name.Text = Program.AppName + "  v" + Program.Version;
+            name.Font = new Font(name.Font.FontFamily, 11f, FontStyle.Bold);
+            name.SetBounds(16, 16, 348, 24);
+
+            Label desc = new Label();
+            desc.Text = "Automatically switches the Windows 11 Xbox full screen experience "
+                + "on and off based on your controller's power state.";
+            desc.SetBounds(16, 46, 348, 44);
+
+            LinkLabel link = new LinkLabel();
+            link.Text = "View the project on GitHub";
+            link.SetBounds(16, 96, 250, 22);
+            link.LinkClicked += OnLink;
+
+            Label lic = new Label();
+            lic.Text = "MIT License · Free and open source";
+            lic.ForeColor = SystemColors.GrayText;
+            lic.SetBounds(16, 122, 348, 22);
+
+            Button ok = new Button();
+            ok.Text = "OK";
+            ok.DialogResult = DialogResult.OK;
+            ok.SetBounds(284, 144, 80, 28);
+
+            Controls.Add(name);
+            Controls.Add(desc);
+            Controls.Add(link);
+            Controls.Add(lic);
+            Controls.Add(ok);
+            AcceptButton = ok;
+        }
+
+        void OnLink(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            try { Process.Start(Program.RepoUrl); }
+            catch { }
         }
     }
 }

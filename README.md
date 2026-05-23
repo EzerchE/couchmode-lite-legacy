@@ -57,6 +57,7 @@ Right-click the tray icon for options:
 - **Active** — pause/resume the automation.
 - **Settings…** — configure behavior (see below).
 - **Open Log File** — view the activity log.
+- **About…** — version and project link.
 - **Exit** — quit the app.
 
 ### Settings
@@ -66,6 +67,7 @@ Right-click the tray icon for options:
 | Enter Xbox mode when a controller connects | On | Switch to Xbox mode on controller power-on. |
 | Exit Xbox mode when all controllers disconnect | On | Return to desktop when the last controller powers off. |
 | Start automatically with Windows | Off | Launch AutoXboxMode at sign-in. |
+| Debug logging | Off | Write a verbose activity log for troubleshooting. |
 
 Settings and logs are stored in `%AppData%\AutoXboxMode\`.
 

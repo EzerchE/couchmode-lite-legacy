@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-23
+
+### Added
+- **About** dialog with version and a link to the GitHub project.
+- **Debug logging** option in Settings. By default the log stays minimal
+  (start, mode changes, exit); enable this for verbose diagnostics.
+
+### Fixed
+- **Open Log File** now opens the log in Notepad. Previously it tried to launch
+  the `.log` file directly, which failed with "the system cannot find the path
+  specified" when no app was associated with `.log`.
+
 ## [1.1.0] - 2026-05-23
 
 ### Changed
