@@ -73,7 +73,7 @@ Settings and logs are stored in `%AppData%\AutoXboxMode\`.
 
 ## Screenshots
 
-<img width="403" alt="AutoXboxMode settings and tray menu" src="https://github.com/user-attachments/assets/d0f36b7b-5d98-4a2a-ac48-e0c3b0487b2e" />
+<img width="387" height="488" alt="{3CE53B19-2CC7-4559-8E0F-96C4DC46988E}" src="https://github.com/user-attachments/assets/b1f51d96-8568-4cd2-9054-33b4cdbdcebf" />
 
 ## How it works
 
