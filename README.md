@@ -98,6 +98,20 @@ Windows 11 machine.
 # -> build\AutoXboxMode.exe
 ```
 
+## Privacy & security
+
+- **Fully offline.** AutoXboxMode makes no network connections — no telemetry,
+  no analytics, no data collection of any kind.
+- **No admin rights.** It only writes its own startup entry under
+  `HKCU\…\Run` (when you enable *Start with Windows*) and its config/log under
+  `%AppData%\AutoXboxMode\`.
+- **Open source.** You can read every line, or build the executable yourself
+  with `build.ps1`.
+- **Unsigned binary.** The released `.exe` is not code-signed, so SmartScreen may
+  warn on first run and some antivirus tools may flag it heuristically (it
+  simulates the `Win+F11` keypress). If in doubt, scan it on
+  [VirusTotal](https://www.virustotal.com/) or build it from source.
+
 ## Roadmap
 
 - Choose apps/shortcuts to **close** when a controller connects (e.g. quit work apps).
