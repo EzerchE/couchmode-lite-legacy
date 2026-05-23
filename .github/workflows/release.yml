@@ -1,0 +1,73 @@
+name: Release (build, sign, publish)
+
+# Builds AutoXboxMode.exe, sends it to SignPath for code signing (free for
+# open-source projects via SignPath Foundation), and attaches the SIGNED exe
+# to a GitHub Release.
+#
+# Trigger: push a version tag (e.g. v1.4.0) or run manually.
+#
+# One-time setup before this works (see SIGNING.md / the checklist):
+#   1. Register the project at https://signpath.org and get it approved.
+#   2. In SignPath, create the project, an artifact configuration, and a
+#      signing policy; connect this GitHub repo (install the SignPath GitHub App).
+#   3. Add repo secret SIGNPATH_API_TOKEN.
+#   4. Fill in the TODO values below (organization-id and the slugs).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create the release and upload assets
+  id-token: write   # used by SignPath to verify the build origin
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        shell: powershell
+        run: .\build.ps1
+
+      - name: Upload unsigned artifact
+        id: unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoXboxMode-unsigned
+          path: build/AutoXboxMode.exe
+          if-no-files-found: error
+
+      - name: Sign with SignPath
+        id: sign
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: 'TODO-your-signpath-organization-id'
+          project-slug: 'AutoXboxMode'
+          signing-policy-slug: 'release-signing'      # TODO: match your SignPath policy
+          artifact-configuration-slug: 'exe'          # TODO: match your SignPath artifact config
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: 'signed'
+
+      - name: Generate checksum
+        shell: powershell
+        run: |
+          $exe = "signed\AutoXboxMode.exe"
+          $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  AutoXboxMode.exe" | Out-File "signed\AutoXboxMode.exe.sha256" -Encoding ascii
+          Write-Host "SHA256: $hash"
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            signed/AutoXboxMode.exe
+            signed/AutoXboxMode.exe.sha256
+          generate_release_notes: true
