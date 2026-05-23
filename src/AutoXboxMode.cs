@@ -334,6 +334,7 @@ namespace AutoXboxMode
         readonly NotifyIcon tray;
         readonly DeviceWatcher watcher;
         readonly System.Windows.Forms.Timer debounce;
+        readonly Control sink; // marshals work back onto the UI thread
         readonly Icon iconActive;
         readonly Icon iconIdle;
         readonly ToolStripMenuItem miActive;
@@ -347,6 +348,9 @@ namespace AutoXboxMode
         {
             settings = Settings.Load();
             Startup.Apply(settings.StartWithWindows); // keep registry in sync
+
+            sink = new Control();
+            IntPtr force = sink.Handle; // force handle creation on the UI thread
 
             iconActive = MakeIcon(true);
             iconIdle = MakeIcon(false);
@@ -422,13 +426,24 @@ namespace AutoXboxMode
         }
 
         // Toggle work runs on a background thread so the UI/tray never freezes.
+        // When it finishes, refresh the tray icon on the UI thread so it reflects
+        // the final Xbox mode state (the switch takes ~1s to settle).
         void RunSetMode(bool want)
         {
             busy = true;
             ThreadPool.QueueUserWorkItem(delegate
             {
                 try { SetMode(want); }
-                finally { busy = false; }
+                finally
+                {
+                    busy = false;
+                    try
+                    {
+                        if (sink.IsHandleCreated)
+                            sink.BeginInvoke((Action)UpdateIcon);
+                    }
+                    catch { }
+                }
             });
         }
 
@@ -517,6 +532,7 @@ namespace AutoXboxMode
         {
             debounce.Stop();
             if (watcher != null) watcher.Dispose();
+            if (sink != null) sink.Dispose();
             tray.Visible = false;
             Log.Write("Exit.");
             ExitThread();
