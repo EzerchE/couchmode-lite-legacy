@@ -4,6 +4,28 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-23
+
+### Fixed
+- **Handheld support (ROG Ally and similar).** Detection no longer relies on the
+  controller count reaching zero. Handhelds expose a built-in XInput gamepad that
+  is always present, so that count never hit zero and the app never reacted.
+  Switching is now based on the count rising above the baseline of always-present
+  controllers, which also keeps multi-controller desktop setups correct: removing
+  one of several controllers no longer exits Xbox mode, only returning all the way
+  to the baseline does.
+- **Respect the Windows "Restart for better performance" prompt.** On handhelds,
+  entering Xbox mode makes Windows show a prompt (Restart / Start now / Stay on
+  desktop) and wait for the user. The app now sends `Win+F11` once and waits
+  patiently, instead of sending a second keystroke or relaunching the Xbox app,
+  which could toggle the mode back off right after the user accepted or override a
+  deliberate "Stay on desktop" choice.
+
+### Changed
+- Controller connect/disconnect transitions are always written to the activity log
+  now (with the before/after counts and baseline), so issues are easier to diagnose
+  without enabling Debug logging.
+
 ## [1.3.2] - 2026-05-23
 
 ### Added

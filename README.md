@@ -26,6 +26,10 @@ If Microsoft adds it natively one day, even better.
   resolution and multi-monitor setup; no fragile mouse coordinates.
 - **Controller detection via XInput:** works with any Xbox / XInput-compatible
   controller (wired, wireless dongle, or Bluetooth), regardless of brand. No admin rights required.
+- **Works on handhelds too:** on devices with a built-in gamepad (ROG Ally and
+  similar), it switches based on extra controllers you connect, on top of the
+  built-in one. It also respects the Windows "Restart for better performance"
+  prompt and lets you make that choice.
 - **Event-driven, zero idle CPU:** listens for Windows device notifications instead
   of polling, so it does nothing until a controller connects or disconnects.
 - **System tray app:** lightweight, runs quietly in the background (~30 MB RAM).

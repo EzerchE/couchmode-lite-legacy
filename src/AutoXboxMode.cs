@@ -20,15 +20,15 @@ using Microsoft.Win32;
 [assembly: AssemblyDescription("Automatically switches the Windows 11 Xbox full screen experience based on your controller.")]
 [assembly: AssemblyCompany("EzerchE")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 EzerchE. MIT License.")]
-[assembly: AssemblyVersion("1.3.2.0")]
-[assembly: AssemblyFileVersion("1.3.2.0")]
+[assembly: AssemblyVersion("1.4.0.0")]
+[assembly: AssemblyFileVersion("1.4.0.0")]
 
 namespace AutoXboxMode
 {
     static class Program
     {
         public const string AppName = "AutoXboxMode";
-        public const string Version = "1.3.2";
+        public const string Version = "1.4.0";
         public const string RepoUrl = "https://github.com/EzerchE/AutoXboxMode";
 
         [STAThread]
@@ -364,6 +364,11 @@ namespace AutoXboxMode
 
         Settings settings;
         int prevCount;
+        // Number of controllers always present at startup (e.g. a handheld's
+        // built-in gamepad). Xbox mode is wanted whenever the live count exceeds
+        // this baseline, so plugging/unplugging extra controllers toggles it
+        // correctly on both desktops (baseline 0) and handhelds (baseline >= 1).
+        int baseline;
         bool automationOn = true;
         volatile bool busy = false;
 
@@ -408,8 +413,8 @@ namespace AutoXboxMode
             debounce.Interval = 1000;
             debounce.Tick += OnDebounceTick;
 
-            prevCount = Native.ControllerCount();
-            Log.Write(string.Format("Started (event-driven). Controllers={0}, XboxMode={1}",
+            baseline = prevCount = Native.ControllerCount();
+            Log.Write(string.Format("Started (event-driven). Controllers={0} (baseline), XboxMode={1}",
                 prevCount, Native.IsXboxModeOn() ? "ON" : "OFF"));
             UpdateIcon();
 
@@ -435,14 +440,23 @@ namespace AutoXboxMode
             try { count = Native.ControllerCount(); }
             catch { return; }
 
-            if (count > 0 && prevCount == 0 && settings.EnableOnConnect)
+            // Xbox mode is wanted whenever the live count is above the baseline of
+            // always-present controllers. Acting on baseline crossings (rather than
+            // crossings of zero) works on handhelds, which expose a built-in gamepad
+            // so the count never reaches zero, and keeps multi-controller setups
+            // correct: removing one of several extra controllers does not exit Xbox
+            // mode, only returning all the way to the baseline does.
+            bool wasAbove = prevCount > baseline;
+            bool isAbove = count > baseline;
+
+            if (isAbove && !wasAbove && settings.EnableOnConnect)
             {
-                Log.Debug("Controller connected -> entering Xbox mode.");
+                Log.Write(string.Format("Controller connected ({0} -> {1}, baseline {2}) -> entering Xbox mode.", prevCount, count, baseline));
                 RunSetMode(true);
             }
-            else if (count == 0 && prevCount > 0 && settings.DisableOnDisconnect)
+            else if (!isAbove && wasAbove && settings.DisableOnDisconnect)
             {
-                Log.Debug("Controller disconnected -> exiting Xbox mode.");
+                Log.Write(string.Format("Controller disconnected ({0} -> {1}, baseline {2}) -> exiting Xbox mode.", prevCount, count, baseline));
                 RunSetMode(false);
             }
 
@@ -477,22 +491,20 @@ namespace AutoXboxMode
             if (Native.IsXboxModeOn() == want) return;
 
             Native.SendWinF11();
-            if (WaitFor(want, 4000)) { Log.Write(want ? "Xbox mode ON." : "Xbox mode OFF."); return; }
 
-            // Wanted ON but nothing happened: the Xbox app may be closed. Launch and retry.
-            if (want)
-            {
-                try
-                {
-                    Log.Debug("First attempt failed, launching Xbox app and retrying...");
-                    Process.Start("xbox:");
-                }
-                catch { }
-                Thread.Sleep(4000);
-                Native.SendWinF11();
-                if (WaitFor(true, 4000)) { Log.Write("Xbox mode ON."); return; }
-            }
-            Log.Write("WARNING: could not reach requested Xbox mode state.");
+            // Win+F11 is the official toggle. On a desktop it switches instantly,
+            // so the wait below returns early. On handhelds Windows shows a
+            // "Restart for better performance" prompt and waits for the user to
+            // choose, so allow generous time when turning Xbox mode ON. We never
+            // send a second keystroke or relaunch anything: doing so could toggle
+            // the mode back off right after the user accepts, or override a
+            // deliberate "Stay on desktop" choice.
+            int timeout = want ? 20000 : 4000;
+            if (WaitFor(want, timeout)) { Log.Write(want ? "Xbox mode ON." : "Xbox mode OFF."); return; }
+
+            Log.Write(want
+                ? "Xbox mode did not turn on (prompt dismissed or still open)."
+                : "Xbox mode did not turn off.");
         }
 
         static bool WaitFor(bool want, int timeoutMs)
