@@ -11,6 +11,11 @@ your PC enters Xbox mode; turn the controller off and it returns to the desktop.
 
 No more reaching for the mouse. Let the controller drive the experience.
 
+Windows 11 can already enter Xbox mode at startup (mainly on handhelds) or with the
+`Win+F11` shortcut, but as of mid-2026 there is no built-in option to switch
+automatically based on your controller's power state. AutoXboxMode fills that gap.
+If Microsoft adds it natively one day, even better.
+
 ---
 
 ## Features
