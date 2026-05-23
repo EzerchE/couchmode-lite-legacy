@@ -9,23 +9,23 @@ AutoXboxMode is a tiny system tray utility for Windows 11. The new
 gaming interface. AutoXboxMode makes it automatic: power on your Xbox controller and
 your PC enters Xbox mode; turn the controller off and it returns to the desktop.
 
-No more reaching for the mouse — let the controller drive the experience.
+No more reaching for the mouse. Let the controller drive the experience.
 
 ---
 
 ## Features
 
-- **Hands-free switching** — enters/exits Xbox mode based on controller power state.
-- **Reliable detection** — uses the official `Win+F11` toggle and detects the current
+- **Hands-free switching:** enters/exits Xbox mode based on controller power state.
+- **Reliable detection:** uses the official `Win+F11` toggle and detects the current
   mode by checking whether the Xbox window fully covers its monitor. Works on any
   resolution and multi-monitor setup; no fragile mouse coordinates.
-- **Controller detection via XInput** — works with any Xbox / XInput-compatible
+- **Controller detection via XInput:** works with any Xbox / XInput-compatible
   controller (wired, wireless dongle, or Bluetooth), regardless of brand. No admin rights required.
-- **Event-driven — zero idle CPU** — listens for Windows device notifications instead
+- **Event-driven, zero idle CPU:** listens for Windows device notifications instead
   of polling, so it does nothing until a controller connects or disconnects.
-- **System tray app** — lightweight, runs quietly in the background (~30 MB RAM).
-- **Configurable** — toggle each behavior and start with Windows.
-- **Tiny & dependency-free** — a single small executable built on .NET Framework 4.8,
+- **System tray app:** lightweight, runs quietly in the background (~30 MB RAM).
+- **Configurable:** toggle each behavior and start with Windows.
+- **Tiny & dependency-free:** a single small executable built on .NET Framework 4.8,
   which ships with Windows 11. Nothing else to install.
 
 ## Requirements
@@ -61,11 +61,11 @@ Once running, AutoXboxMode works automatically:
 
 Right-click the tray icon for options:
 
-- **Active** — pause/resume the automation.
-- **Settings…** — configure behavior (see below).
-- **Open Log File** — view the activity log.
-- **About…** — version and project link.
-- **Exit** — quit the app.
+- **Active:** pause/resume the automation.
+- **Settings…** configure behavior (see below).
+- **Open Log File:** view the activity log.
+- **About…** version and project link.
+- **Exit:** quit the app.
 
 ### Settings
 
@@ -107,7 +107,7 @@ Windows 11 machine.
 
 ## Privacy & security
 
-- **Fully offline.** AutoXboxMode makes no network connections — no telemetry,
+- **Fully offline.** AutoXboxMode makes no network connections: no telemetry,
   no analytics, no data collection of any kind.
 - **No admin rights.** It only writes its own startup entry under
   `HKCU\…\Run` (when you enable *Start with Windows*) and its config/log under
@@ -138,7 +138,7 @@ support development:
 ## Disclaimer
 
 AutoXboxMode is provided **"as is", without warranty of any kind**. It only sends
-the standard `Win+F11` shortcut and toggles its own startup entry — it does not
+the standard `Win+F11` shortcut and toggles its own startup entry, and it does not
 modify system files. That said, you use it at your own risk: the author is not
 liable for any damage, data loss, or other issues arising from its use (see the
 [MIT License](LICENSE) for the full terms).

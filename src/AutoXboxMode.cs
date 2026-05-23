@@ -513,7 +513,7 @@ namespace AutoXboxMode
             try { on = Native.IsXboxModeOn(); }
             catch { }
             tray.Icon = (automationOn && on) ? iconActive : iconIdle;
-            tray.Text = string.Format("{0} – {1}{2}",
+            tray.Text = string.Format("{0}: {1}{2}",
                 Program.AppName,
                 automationOn ? "Active" : "Paused",
                 on ? " (Xbox mode ON)" : "");
