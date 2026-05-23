@@ -143,6 +143,11 @@ modify system files. That said, you use it at your own risk: the author is not
 liable for any damage, data loss, or other issues arising from its use (see the
 [MIT License](LICENSE) for the full terms).
 
+## Acknowledgments
+
+Code signing for Windows release builds is provided free of charge by the
+[SignPath Foundation](https://signpath.org/) open-source program.
+
 ## License
 
 [MIT](LICENSE)
