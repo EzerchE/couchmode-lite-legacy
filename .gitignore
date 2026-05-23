@@ -1,0 +1,21 @@
+# Build output
+build/
+*.exe
+
+# Logs
+*.log
+*-log.txt
+
+# Local prototype / diagnostic scripts (not part of the shipped app)
+Diag-*.ps1
+Test-Detect.ps1
+Auto-XboxMode.ps1
+
+# OS / editor cruft
+Thumbs.db
+desktop.ini
+.vs/
+
+# Tooling / local config
+.claude/
+memory/
