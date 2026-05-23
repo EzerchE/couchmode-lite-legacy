@@ -47,13 +47,22 @@ jobs:
         uses: signpath/github-action-submit-signing-request@v1
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: 'TODO-your-signpath-organization-id'
+          organization-id: '9c8a76bc-dfe3-4862-9bd1-cd754db2c498'
           project-slug: 'AutoXboxMode'
-          signing-policy-slug: 'release-signing'      # TODO: match your SignPath policy
-          artifact-configuration-slug: 'exe'          # TODO: match your SignPath artifact config
+          # Test-signing policy (self-signed, not trusted by Windows). Switch to
+          # the release policy once the SignPath Foundation certificate is approved.
+          signing-policy-slug: 'test-signing'
+          artifact-configuration-slug: 'initial'
           github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: 'signed'
+
+      - name: Upload signed artifact (for inspection)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoXboxMode-signed
+          path: signed/AutoXboxMode.exe
+          if-no-files-found: error
 
       - name: Generate checksum
         shell: powershell
