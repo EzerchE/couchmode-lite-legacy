@@ -130,6 +130,13 @@ Windows 11 machine.
   it clean. You can verify your download against the SHA-256 published in each
   [release](../../releases), scan it on [VirusTotal](https://www.virustotal.com/),
   or build it yourself from source.
+- **Diagnostic log.** Logging is off by default. With Debug logging enabled (for
+  troubleshooting), the log records technical context only: app and OS version,
+  monitor sizes, controller types (subtype, wired/wireless) and device names, and
+  the size and position of any window titled "Xbox". It does **not** record other
+  window titles (they are redacted), file paths, usernames, account data, or device
+  serial numbers, and it is capped in size. The log lives at
+  `%AppData%\AutoXboxMode\app.log`; you can open and review it before sharing.
 
 ## Roadmap
 
