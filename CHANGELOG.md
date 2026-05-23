@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-05-23
+
+### Changed
+- Embedded proper version metadata (product, description, company, version) in
+  the executable. Improves the file's Properties details and reduces some
+  antivirus heuristic false positives for the unsigned binary.
+
 ## [1.3.0] - 2026-05-23
 
 ### Added

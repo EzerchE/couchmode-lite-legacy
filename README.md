@@ -108,9 +108,12 @@ Windows 11 machine.
 - **Open source.** You can read every line, or build the executable yourself
   with `build.ps1`.
 - **Unsigned binary.** The released `.exe` is not code-signed, so SmartScreen may
-  warn on first run and some antivirus tools may flag it heuristically (it
-  simulates the `Win+F11` keypress). If in doubt, scan it on
-  [VirusTotal](https://www.virustotal.com/) or build it from source.
+  warn on first run. A few heuristic / machine-learning antivirus engines may
+  flag it as a false positive because it simulates the `Win+F11` keypress and
+  starts with Windows; mainstream scanners (including Microsoft Defender) report
+  it clean. You can verify your download against the SHA-256 published in each
+  [release](../../releases), scan it on [VirusTotal](https://www.virustotal.com/),
+  or build it yourself from source.
 
 ## Roadmap
 
