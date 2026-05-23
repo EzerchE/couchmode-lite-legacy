@@ -2,6 +2,8 @@
 
 **Automatically enable Windows 11 Xbox mode (the full screen experience) when an Xbox controller connects, and turn it off when the controller disconnects.**
 
+<img width="403" height="433" alt="{5B1CC433-00F4-4568-80FB-26CC87E60259}" src="https://github.com/user-attachments/assets/d0f36b7b-5d98-4a2a-ac48-e0c3b0487b2e" />
+
 AutoXboxMode is a tiny (~16 KB) system tray utility for Windows 11. The new
 **Xbox full screen experience (FSE)** turns your PC into a console-like, big-screen
 gaming interface. AutoXboxMode makes it automatic: power on your Xbox controller and
