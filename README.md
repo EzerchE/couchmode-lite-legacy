@@ -31,8 +31,15 @@ No more reaching for the mouse — let the controller drive the experience.
 ## Requirements
 
 - Windows 11 with the **Xbox full screen experience** available
-  (rolling out via the May 2026 update and later; Settings → Gaming → Full screen experience).
+  (Settings → Gaming → Full screen experience). See Microsoft's overview:
+  [Windows gaming full screen experience](https://support.microsoft.com/en-gb/topic/windows-gaming-full-screen-experience-67fb8d12-5467-4a95-8adf-0a10789576ab).
 - An Xbox / XInput-compatible controller.
+
+> **Don't see the feature yet?** It's rolling out gradually (May 2026 update and
+> later), so not every PC has it. If yours doesn't show it, community guides
+> explain how to enable it early, e.g.
+> [How to force-enable Xbox mode in Windows 11](https://www.windowslatest.com/2026/05/02/how-to-force-enable-xbox-mode-in-windows-11-and-why-microsoft-hides-it-explained/).
+> Enabling hidden features is at your own risk.
 
 ## Installation
 
@@ -127,6 +134,14 @@ AutoXboxMode is free and open source. If it makes your gaming setup nicer, you c
 support development:
 
 - [GitHub Sponsors](https://github.com/sponsors/EzerchE)
+
+## Disclaimer
+
+AutoXboxMode is provided **"as is", without warranty of any kind**. It only sends
+the standard `Win+F11` shortcut and toggles its own startup entry — it does not
+modify system files. That said, you use it at your own risk: the author is not
+liable for any damage, data loss, or other issues arising from its use (see the
+[MIT License](LICENSE) for the full terms).
 
 ## License
 

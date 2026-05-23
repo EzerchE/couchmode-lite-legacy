@@ -4,6 +4,15 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2026-05-23
+
+### Added
+- Embedded an application manifest (asInvoker execution level, declared
+  Windows 10/11 support, system DPI awareness). Improves high-DPI rendering and
+  adds another legitimacy signal to reduce antivirus heuristic flags.
+- README: link to enabling the Xbox full screen experience (and a community
+  guide for PCs that don't have it yet), plus a Disclaimer section.
+
 ## [1.3.1] - 2026-05-23
 
 ### Changed

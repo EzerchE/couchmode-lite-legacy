@@ -26,9 +26,11 @@ $refs = @(
 ) | ForEach-Object { "/r:$_" }
 
 $iconArg = if (Test-Path $icon) { "/win32icon:$icon" } else { $null }
+$manifest = Join-Path $root "app.manifest"
+$manifestArg = if (Test-Path $manifest) { "/win32manifest:$manifest" } else { $null }
 
 & $csc /nologo /target:winexe /optimize+ /platform:anycpu `
-    $iconArg "/out:$out" $refs $src
+    $iconArg $manifestArg "/out:$out" $refs $src
 
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed (exit $LASTEXITCODE)." }
 

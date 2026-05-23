@@ -20,15 +20,15 @@ using Microsoft.Win32;
 [assembly: AssemblyDescription("Automatically switches the Windows 11 Xbox full screen experience based on your controller.")]
 [assembly: AssemblyCompany("EzerchE")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 EzerchE. MIT License.")]
-[assembly: AssemblyVersion("1.3.1.0")]
-[assembly: AssemblyFileVersion("1.3.1.0")]
+[assembly: AssemblyVersion("1.3.2.0")]
+[assembly: AssemblyFileVersion("1.3.2.0")]
 
 namespace AutoXboxMode
 {
     static class Program
     {
         public const string AppName = "AutoXboxMode";
-        public const string Version = "1.3.1";
+        public const string Version = "1.3.2";
         public const string RepoUrl = "https://github.com/EzerchE/AutoXboxMode";
 
         [STAThread]
