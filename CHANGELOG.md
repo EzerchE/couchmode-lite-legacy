@@ -4,12 +4,6 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.6-beta] - 2026-05-29
-
-### Changed
-- Redesigned the app/tray icon to a cleaner face-on controller with subtle
-  shoulder bumpers, dropping the older twin-grip silhouette.
-
 ## [1.3.5-beta] - 2026-05-23
 
 ### Changed
