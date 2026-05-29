@@ -1,4 +1,4 @@
-// AutoXboxMode - automatically toggles the Windows 11 Xbox full screen
+// CouchMode - automatically toggles the Windows 11 Xbox full screen
 // experience (Xbox mode) based on Xbox controller connection state.
 //
 // Targets .NET Framework 4.8 (ships with Windows 11). Compile with build.ps1.
@@ -17,32 +17,32 @@ using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: AssemblyTitle("AutoXboxMode")]
-[assembly: AssemblyProduct("AutoXboxMode")]
+[assembly: AssemblyTitle("CouchMode")]
+[assembly: AssemblyProduct("CouchMode")]
 [assembly: AssemblyDescription("Automatically switches the Windows 11 Xbox full screen experience based on your controller.")]
 [assembly: AssemblyCompany("EzerchE")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 EzerchE. MIT License.")]
-[assembly: AssemblyVersion("1.3.5.0")]
-[assembly: AssemblyFileVersion("1.3.5.0")]
-[assembly: AssemblyInformationalVersion("1.3.5-beta")]
+[assembly: AssemblyVersion("1.3.6.0")]
+[assembly: AssemblyFileVersion("1.3.6.0")]
+[assembly: AssemblyInformationalVersion("1.3.6-beta")]
 
-namespace AutoXboxMode
+namespace CouchMode
 {
     static class Program
     {
-        public const string AppName = "AutoXboxMode";
-        public const string Version = "1.3.5-beta";
-        public const string RepoUrl = "https://github.com/EzerchE/AutoXboxMode";
+        public const string AppName = "CouchMode";
+        public const string Version = "1.3.6-beta";
+        public const string RepoUrl = "https://github.com/EzerchE/CouchMode";
 
         [STAThread]
         static void Main()
         {
             bool createdNew;
-            using (Mutex mutex = new Mutex(true, "AutoXboxMode_SingleInstance_{8F3A1C20-1E4B-4C2A-9D6E-7A1B2C3D4E5F}", out createdNew))
+            using (Mutex mutex = new Mutex(true, "CouchMode_SingleInstance_{8F3A1C20-1E4B-4C2A-9D6E-7A1B2C3D4E5F}", out createdNew))
             {
                 if (!createdNew)
                 {
-                    MessageBox.Show("AutoXboxMode is already running (check the system tray).",
+                    MessageBox.Show("CouchMode is already running (check the system tray).",
                         AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
@@ -394,7 +394,7 @@ namespace AutoXboxMode
         public DeviceWatcher()
         {
             CreateParams cp = new CreateParams();
-            cp.Caption = "AutoXboxMode.DeviceWatcher";
+            cp.Caption = "CouchMode.DeviceWatcher";
             cp.Parent = HWND_MESSAGE; // message-only window
             CreateHandle(cp);
 
@@ -433,7 +433,7 @@ namespace AutoXboxMode
     }
 
     // ---------------------------------------------------------------------
-    //  Settings (simple key=value file in %AppData%\AutoXboxMode\config.ini)
+    //  Settings (simple key=value file in %AppData%\CouchMode\config.ini)
     // ---------------------------------------------------------------------
     class Settings
     {

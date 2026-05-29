@@ -4,6 +4,15 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.6-beta] - 2026-05-29
+
+### Changed
+- **Renamed the project to CouchMode** (formerly AutoXboxMode). Config and log now
+  live in `%AppData%\CouchMode\` and the executable is `CouchMode.exe`. The Windows
+  feature it controls is still called "Xbox mode" / the full screen experience. If
+  you used an earlier version, re-apply your settings (the old
+  `%AppData%\AutoXboxMode\` folder is left untouched).
+
 ## [1.3.5-beta] - 2026-05-23
 
 ### Changed
@@ -108,4 +117,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - System tray interface with pause/resume.
 - Settings dialog: enable-on-connect, disable-on-disconnect, start with Windows,
   and configurable poll interval.
-- Activity logging to `%AppData%\AutoXboxMode\app.log`.
+- Activity logging to `%AppData%\CouchMode\app.log`.

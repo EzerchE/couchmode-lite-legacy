@@ -1,10 +1,10 @@
 # Generates the app icon and README images from a single minimal gamepad design.
 # Outputs:
-#   build\AutoXboxMode.ico  (multi-size, embedded into the exe)
+#   build\CouchMode.ico  (multi-size, embedded into the exe)
 #   assets\logo.png         (256px transparent)
 #   assets\banner.png       (README hero image)
 #
-# The same gamepad geometry is mirrored in AutoXboxMode.cs (MakeIcon) so the
+# The same gamepad geometry is mirrored in CouchMode.cs (MakeIcon) so the
 # tray icon matches this exe icon.
 
 $ErrorActionPreference = "Stop"
@@ -91,8 +91,8 @@ function Write-Ico([string]$path, [int[]]$sizes) {
 New-Item -ItemType Directory -Force -Path (Join-Path $root "build") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $root "assets") | Out-Null
 
-Write-Ico (Join-Path $root "build\AutoXboxMode.ico") @(256, 128, 64, 48, 32, 16)
-Write-Host "Wrote build\AutoXboxMode.ico" -ForegroundColor Green
+Write-Ico (Join-Path $root "build\CouchMode.ico") @(256, 128, 64, 48, 32, 16)
+Write-Host "Wrote build\CouchMode.ico" -ForegroundColor Green
 
 $logo = New-GamepadBitmap 256 $Green
 $logo.Save((Join-Path $root "assets\logo.png"), [System.Drawing.Imaging.ImageFormat]::Png)
@@ -115,7 +115,7 @@ $titleFont = New-Object System.Drawing.Font("Segoe UI", 34, [System.Drawing.Font
 $tagFont   = New-Object System.Drawing.Font("Segoe UI", 15, [System.Drawing.FontStyle]::Regular)
 $wBrush = New-Object System.Drawing.SolidBrush($White)
 $gBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 170, 170, 170))
-$bg.DrawString("AutoXboxMode", $titleFont, $wBrush, 240, 78)
+$bg.DrawString("CouchMode", $titleFont, $wBrush, 240, 78)
 $bg.DrawString([char]0x2192 + " controller on = Xbox mode  ·  off = desktop", $tagFont, $gBrush, 244, 134)
 
 $banner.Save((Join-Path $root "assets\banner.png"), [System.Drawing.Imaging.ImageFormat]::Png)

@@ -1,19 +1,19 @@
-# AutoXboxMode
+# CouchMode
 
 **Automatically enable Windows 11 Xbox mode (the full screen experience) when an Xbox controller connects, and turn it off when the controller disconnects.**
 
-![AutoXboxMode](assets/banner.png)
+![CouchMode](assets/banner.png)
 
-AutoXboxMode is a tiny system tray utility for Windows 11. The new
+CouchMode is a tiny system tray utility for Windows 11. The new
 **Xbox full screen experience (FSE)** turns your PC into a console-like, big-screen
-gaming interface. AutoXboxMode makes it automatic: power on your Xbox controller and
+gaming interface. CouchMode makes it automatic: power on your Xbox controller and
 your PC enters Xbox mode; turn the controller off and it returns to the desktop.
 
 No more reaching for the mouse. Let the controller drive the experience.
 
 Windows 11 can already enter Xbox mode at startup (mainly on handhelds) or with the
 `Win+F11` shortcut, but as of mid-2026 there is no built-in option to switch
-automatically based on your controller's power state. AutoXboxMode fills that gap.
+automatically based on your controller's power state. CouchMode fills that gap.
 If Microsoft adds it natively one day, even better.
 
 ---
@@ -52,7 +52,7 @@ If Microsoft adds it natively one day, even better.
 
 ## Installation
 
-1. Download `AutoXboxMode.exe` from the [latest release](../../releases/latest).
+1. Download `CouchMode.exe` from the [latest release](../../releases/latest).
 2. Run it. An icon appears in the system tray.
 3. (Optional) Open **Settings…** from the tray menu and enable **Start automatically with Windows**.
 
@@ -61,7 +61,7 @@ If Microsoft adds it natively one day, even better.
 
 ## Usage
 
-Once running, AutoXboxMode works automatically:
+Once running, CouchMode works automatically:
 
 | Action | Result |
 | --- | --- |
@@ -82,10 +82,10 @@ Right-click the tray icon for options:
 | --- | --- | --- |
 | Enter Xbox mode when a controller connects | On | Switch to Xbox mode on controller power-on. |
 | Exit Xbox mode when all controllers disconnect | On | Return to desktop when the last controller powers off. |
-| Start automatically with Windows | Off | Launch AutoXboxMode at sign-in. |
+| Start automatically with Windows | Off | Launch CouchMode at sign-in. |
 | Debug logging | Off | Write a verbose activity log for troubleshooting. |
 
-Settings and logs are stored in `%AppData%\AutoXboxMode\`.
+Settings and logs are stored in `%AppData%\CouchMode\`.
 
 ## Screenshots
 
@@ -118,9 +118,9 @@ It helps to know which version of Xbox mode your device has:
   (feature flags plus spoofing the device form factor and panel size), which is
   unofficial and can be unstable on multi-monitor or docked setups.
 
-AutoXboxMode works with either level, because it only sends the official `Win+F11`
+CouchMode works with either level, because it only sends the official `Win+F11`
 toggle that Windows itself uses. If you have the full handheld-style mode, the
-restart prompt still appears and AutoXboxMode leaves that choice to you. Whether to
+restart prompt still appears and CouchMode leaves that choice to you. Whether to
 force the full mode on a desktop is entirely your decision; this project does not
 perform or recommend any device spoofing.
 
@@ -131,16 +131,16 @@ Windows 11 machine.
 
 ```powershell
 .\build.ps1
-# -> build\AutoXboxMode.exe
+# -> build\CouchMode.exe
 ```
 
 ## Privacy & security
 
-- **Fully offline.** AutoXboxMode makes no network connections: no telemetry,
+- **Fully offline.** CouchMode makes no network connections: no telemetry,
   no analytics, no data collection of any kind.
 - **No admin rights.** It only writes its own startup entry under
   `HKCU\…\Run` (when you enable *Start with Windows*) and its config/log under
-  `%AppData%\AutoXboxMode\`.
+  `%AppData%\CouchMode\`.
 - **Open source.** You can read every line, or build the executable yourself
   with `build.ps1`.
 - **Unsigned binary.** The released `.exe` is not code-signed, so SmartScreen may
@@ -156,7 +156,7 @@ Windows 11 machine.
   the size and position of any window titled "Xbox". It does **not** record other
   window titles (they are redacted), file paths, usernames, account data, or device
   serial numbers, and it is capped in size. The log lives at
-  `%AppData%\AutoXboxMode\app.log`; you can open and review it before sharing.
+  `%AppData%\CouchMode\app.log`; you can open and review it before sharing.
 
 ## Roadmap
 
@@ -166,14 +166,14 @@ Windows 11 machine.
 
 ## Support
 
-AutoXboxMode is free and open source. If it makes your gaming setup nicer, you can
+CouchMode is free and open source. If it makes your gaming setup nicer, you can
 support development:
 
 - [GitHub Sponsors](https://github.com/sponsors/EzerchE)
 
 ## Disclaimer
 
-AutoXboxMode is provided **"as is", without warranty of any kind**. It only sends
+CouchMode is provided **"as is", without warranty of any kind**. It only sends
 the standard `Win+F11` shortcut and toggles its own startup entry, and it does not
 modify system files. That said, you use it at your own risk: the author is not
 liable for any damage, data loss, or other issues arising from its use (see the

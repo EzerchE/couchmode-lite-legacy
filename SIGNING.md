@@ -2,7 +2,7 @@
 
 Release builds are signed for free through the [SignPath Foundation](https://signpath.org)
 open-source program. Signing happens automatically in GitHub Actions
-(`.github/workflows/release.yml`): the workflow builds `AutoXboxMode.exe`, submits
+(`.github/workflows/release.yml`): the workflow builds `CouchMode.exe`, submits
 it to SignPath, and publishes the signed binary to the GitHub Release.
 
 ## One-time setup
@@ -12,8 +12,8 @@ it to SignPath, and publishes the signed binary to the GitHub Release.
    - Submit this repository for review. Approval is done by SignPath staff.
 
 2. **Configure the project in SignPath**
-   - Create a **project** (suggested slug: `AutoXboxMode`).
-   - Add an **artifact configuration** that points at `AutoXboxMode.exe`
+   - Create a **project** (suggested slug: `CouchMode`).
+   - Add an **artifact configuration** that points at `CouchMode.exe`
      (suggested slug: `exe`).
    - Create a **signing policy** for releases (suggested slug: `release-signing`).
    - Connect this GitHub repository as a trusted build origin and install the
@@ -32,13 +32,13 @@ it to SignPath, and publishes the signed binary to the GitHub Release.
 ## Cutting a signed release
 
 ```bash
-# bump the version in src/AutoXboxMode.cs and app.manifest first, then:
+# bump the version in src/CouchMode.cs and app.manifest first, then:
 git tag v1.3.3
 git push origin v1.3.3
 ```
 
 The workflow runs on the tag, signs the binary, and creates the release with the
-signed `AutoXboxMode.exe` plus a `.sha256` checksum.
+signed `CouchMode.exe` plus a `.sha256` checksum.
 
 ## References
 

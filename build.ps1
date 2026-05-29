@@ -1,12 +1,12 @@
-# Builds AutoXboxMode.exe (.NET Framework 4.8, no external dependencies).
-# Output: build\AutoXboxMode.exe
+# Builds CouchMode.exe (.NET Framework 4.8, no external dependencies).
+# Output: build\CouchMode.exe
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
-$src = Join-Path $root "src\AutoXboxMode.cs"
+$src = Join-Path $root "src\CouchMode.cs"
 $outDir = Join-Path $root "build"
-$out = Join-Path $outDir "AutoXboxMode.exe"
-$icon = Join-Path $outDir "AutoXboxMode.ico"
+$out = Join-Path $outDir "CouchMode.exe"
+$icon = Join-Path $outDir "CouchMode.ico"
 
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 

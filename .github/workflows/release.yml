@@ -7,7 +7,7 @@ name: Release (build, sign, publish)
 # build system + origin verification, and re-enable the workflow
 # (gh workflow enable release.yml). Until then, releases are cut manually.
 #
-# Builds AutoXboxMode.exe, sends it to SignPath for code signing (free for
+# Builds CouchMode.exe, sends it to SignPath for code signing (free for
 # open-source projects via SignPath Foundation), and attaches the SIGNED exe
 # to a GitHub Release.
 #
@@ -46,8 +46,8 @@ jobs:
         id: unsigned
         uses: actions/upload-artifact@v4
         with:
-          name: AutoXboxMode-unsigned
-          path: build/AutoXboxMode.exe
+          name: CouchMode-unsigned
+          path: build/CouchMode.exe
           if-no-files-found: error
 
       - name: Sign with SignPath
@@ -57,7 +57,7 @@ jobs:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           github-token: ${{ github.token }}
           organization-id: '9c8a76bc-dfe3-4862-9bd1-cd754db2c498'
-          project-slug: 'AutoXboxMode'
+          project-slug: 'CouchMode'
           # Test-signing policy (self-signed, not trusted by Windows). Switch to
           # the release policy once the SignPath Foundation certificate is approved.
           signing-policy-slug: 'test-signing'
@@ -69,16 +69,16 @@ jobs:
       - name: Upload signed artifact (for inspection)
         uses: actions/upload-artifact@v4
         with:
-          name: AutoXboxMode-signed
-          path: signed/AutoXboxMode.exe
+          name: CouchMode-signed
+          path: signed/CouchMode.exe
           if-no-files-found: error
 
       - name: Generate checksum
         shell: powershell
         run: |
-          $exe = "signed\AutoXboxMode.exe"
+          $exe = "signed\CouchMode.exe"
           $hash = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  AutoXboxMode.exe" | Out-File "signed\AutoXboxMode.exe.sha256" -Encoding ascii
+          "$hash  CouchMode.exe" | Out-File "signed\CouchMode.exe.sha256" -Encoding ascii
           Write-Host "SHA256: $hash"
 
       - name: Publish release
@@ -86,6 +86,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            signed/AutoXboxMode.exe
-            signed/AutoXboxMode.exe.sha256
+            signed/CouchMode.exe
+            signed/CouchMode.exe.sha256
           generate_release_notes: true
