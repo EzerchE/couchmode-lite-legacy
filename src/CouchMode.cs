@@ -890,19 +890,26 @@ namespace CouchMode
             UpdateIcon();
         }
 
+        bool settingsOpen;
         void OnSettings(object sender, EventArgs e)
         {
-            using (SettingsForm f = new SettingsForm(settings))
+            if (settingsOpen) return; // tray clicks while the dialog is open are ignored
+            settingsOpen = true;
+            try
             {
-                if (f.ShowDialog() == DialogResult.OK)
+                using (SettingsForm f = new SettingsForm(settings))
                 {
-                    settings = f.Result;
-                    settings.Save();
-                    Log.Verbose = settings.DebugLogging;
-                    Startup.Apply(settings.StartWithWindows);
-                    Log.Debug("Settings saved.");
+                    if (f.ShowDialog() == DialogResult.OK)
+                    {
+                        settings = f.Result;
+                        settings.Save();
+                        Log.Verbose = settings.DebugLogging;
+                        Startup.Apply(settings.StartWithWindows);
+                        Log.Debug("Settings saved.");
+                    }
                 }
             }
+            finally { settingsOpen = false; }
         }
 
         void OnOpenLog(object sender, EventArgs e)
@@ -947,7 +954,7 @@ namespace CouchMode
 
                 // Couch filling the canvas (no background square) so it stays clear
                 // at tiny tray sizes. Blue when active, grey when paused.
-                Color fill = active ? Color.FromArgb(1, 119, 235) : Color.FromArgb(110, 110, 110);
+                Color fill = active ? Color.FromArgb(16, 124, 16) : Color.FromArgb(110, 110, 110);
                 using (SolidBrush b = new SolidBrush(fill))
                 {
                     using (var back = RoundRect(6f, 8f, 20f, 10f, 4f)) g.FillPath(b, back);    // backrest
@@ -1074,7 +1081,7 @@ namespace CouchMode
                 cmbMode.Enabled = false;
                 modeUpsell = new LinkLabel();
                 modeUpsell.Text = "Steam Big Picture & custom launcher (Pro - coming soon)";
-                modeUpsell.LinkColor = Color.FromArgb(1, 119, 235);
+                modeUpsell.LinkColor = Color.FromArgb(16, 124, 16);
                 modeUpsell.SetBounds(16, 132, 380, 20);
                 modeUpsell.LinkClicked += delegate { Pro.ShowUpsell(this); };
             }
@@ -1262,7 +1269,7 @@ namespace CouchMode
             LinkLabel banner = new LinkLabel();
             banner.Text = "Pro feature - coming soon (click for details)";
             banner.SetBounds(10, 6, 420, 20);
-            banner.LinkColor = Color.FromArgb(1, 119, 235);
+            banner.LinkColor = Color.FromArgb(16, 124, 16);
             banner.LinkClicked += delegate { Pro.ShowUpsell(this); };
             page.Controls.Add(banner);
             banner.BringToFront();
