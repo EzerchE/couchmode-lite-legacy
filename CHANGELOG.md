@@ -4,6 +4,29 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0-beta] - 2026-05-30
+
+### Added
+- **Live status panel** on the General tab: current controller and CouchMode state,
+  plus the last action, refreshed while the window is open.
+- **Tray quick actions:** turn Xbox mode on or off right now, and a "Start with
+  Windows" toggle, straight from the tray menu.
+- **Connect and disconnect delays** (under Advanced): wait a chosen number of seconds
+  before turning on, and a grace period before turning off. The grace period absorbs
+  brief controller or Bluetooth drops, so a momentary disconnect no longer kicks you
+  back to the desktop mid-game.
+- **Advanced section** on the General tab that keeps the power-user options (timing
+  and debug logging) tucked away until you need them.
+
+### Changed
+- Clearer, consistent wording throughout (CouchMode turns on/off; the target is the
+  Xbox full screen experience).
+- The tray icon now uses the same couch artwork as the app icon (brand colour when
+  active, grey when paused), instead of a separately drawn shape.
+- Expanded Pro feature preview (shown but locked in this free build): the tweaks tab
+  is now "Session tweaks" and previews a Windows Game Mode toggle, a power-plan
+  "only when plugged in" option, a force-close timeout, and staggered app launches.
+
 ## [1.4.0-beta] - 2026-05-30
 
 ### Changed

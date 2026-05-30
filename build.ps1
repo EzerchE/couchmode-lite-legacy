@@ -30,8 +30,13 @@ $iconArg = if (Test-Path $icon) { "/win32icon:$icon" } else { $null }
 $manifest = Join-Path $root "app.manifest"
 $manifestArg = if (Test-Path $manifest) { "/win32manifest:$manifest" } else { $null }
 
+# Embed the couch artwork so the tray icon can be recoloured at runtime to match
+# the app icon exactly (green active / grey paused).
+$couchSrc = Join-Path $root "assets\couch-src.png"
+$resArg = if (Test-Path $couchSrc) { "/resource:$couchSrc,couch-src.png" } else { $null }
+
 & $csc /nologo /target:winexe /optimize+ /platform:anycpu `
-    $iconArg $manifestArg "/out:$out" $refs $src
+    $iconArg $manifestArg $resArg "/out:$out" $refs $src
 
 if ($LASTEXITCODE -ne 0) { throw "Compilation failed (exit $LASTEXITCODE)." }
 

@@ -23,16 +23,16 @@ using Microsoft.Win32;
 [assembly: AssemblyDescription("Automatically switches the Windows 11 Xbox full screen experience based on your controller.")]
 [assembly: AssemblyCompany("EzerchE")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 EzerchE. MIT License.")]
-[assembly: AssemblyVersion("1.4.0.0")]
-[assembly: AssemblyFileVersion("1.4.0.0")]
-[assembly: AssemblyInformationalVersion("1.4.0-beta")]
+[assembly: AssemblyVersion("1.5.0.0")]
+[assembly: AssemblyFileVersion("1.5.0.0")]
+[assembly: AssemblyInformationalVersion("1.5.0-beta")]
 
 namespace CouchMode
 {
     static class Program
     {
         public const string AppName = "CouchMode";
-        public const string Version = "1.4.0-beta";
+        public const string Version = "1.5.0-beta";
         public const string RepoUrl = "https://github.com/EzerchE/CouchMode";
 
         [STAThread]
@@ -503,6 +503,12 @@ namespace CouchMode
         public bool StartWithWindows = false;
         public bool DebugLogging = false;
 
+        // Reliability: how long to wait before acting on a controller connect /
+        // disconnect. The off-delay is a grace period that absorbs brief
+        // Bluetooth drops (a reconnect within the window cancels the turn-off).
+        public int OnDelaySeconds = 0;
+        public int OffDelaySeconds = 5;
+
         // What to open when a controller connects:
         //   "xbox"    = Windows Xbox mode / full screen experience (Win+F11)
         //   "steambp" = Steam Big Picture (steam://open|close/bigpicture)
@@ -529,11 +535,19 @@ namespace CouchMode
         public bool TweakPowerPlan = false;      // switch power plan while in Xbox mode
         public string PowerSchemeGuid = "";      // target plan GUID ("" = High performance)
         public bool TweakVisualEffects = false;  // turn off transparency and UI animations
+        public bool PowerPlanPluggedInOnly = true; // skip the power-plan switch on battery
+        public string GameMode = "";             // Windows Game Mode: "" leave, "on", "off"
         // Display: switch screens when entering / leaving Xbox mode (uses the
         // built-in DisplaySwitch.exe). Values: "" (leave as-is), "internal" (PC
         // screen only), "clone" (duplicate), "extend", "external" (second screen only).
         public string DisplayOnXbox = "";
         public string DisplayOnExit = "";
+
+        // Resource control timing. CloseTimeoutSeconds is the graceful wait before
+        // a forced close; LaunchStaggerSeconds is the gap between launching/reopening
+        // apps so they do not all start at once and spike the CPU.
+        public int CloseTimeoutSeconds = 10;
+        public int LaunchStaggerSeconds = 0;
 
         static string Dir
         {
@@ -565,6 +579,8 @@ namespace CouchMode
                         else if (k == "DisableOnDisconnect") s.DisableOnDisconnect = (v == "1");
                         else if (k == "StartWithWindows") s.StartWithWindows = (v == "1");
                         else if (k == "DebugLogging") s.DebugLogging = (v == "1");
+                        else if (k == "OnDelaySeconds") s.OnDelaySeconds = ParseInt(v, 0, 0, 30);
+                        else if (k == "OffDelaySeconds") s.OffDelaySeconds = ParseInt(v, 5, 0, 60);
                         else if (k == "Mode") s.Mode = v;
                         else if (k == "CustomLauncherPath") s.CustomLauncherPath = v;
                         else if (k == "SteamWithFse") s.SteamWithFse = (v == "1");
@@ -578,6 +594,10 @@ namespace CouchMode
                         else if (k == "TweakPowerPlan") s.TweakPowerPlan = (v == "1");
                         else if (k == "PowerSchemeGuid") s.PowerSchemeGuid = v;
                         else if (k == "TweakVisualEffects") s.TweakVisualEffects = (v == "1");
+                        else if (k == "PowerPlanPluggedInOnly") s.PowerPlanPluggedInOnly = (v == "1");
+                        else if (k == "GameMode") s.GameMode = v;
+                        else if (k == "CloseTimeoutSeconds") s.CloseTimeoutSeconds = ParseInt(v, 10, 1, 60);
+                        else if (k == "LaunchStaggerSeconds") s.LaunchStaggerSeconds = ParseInt(v, 0, 0, 10);
                         else if (k == "DisplayOnXbox") s.DisplayOnXbox = v;
                         else if (k == "DisplayOnExit") s.DisplayOnExit = v;
                     }
@@ -585,6 +605,15 @@ namespace CouchMode
             }
             catch { }
             return s;
+        }
+
+        static int ParseInt(string v, int def, int min, int max)
+        {
+            int n;
+            if (!int.TryParse(v, out n)) return def;
+            if (n < min) n = min;
+            if (n > max) n = max;
+            return n;
         }
 
         public void Save()
@@ -597,6 +626,8 @@ namespace CouchMode
                 sb.AppendLine("DisableOnDisconnect=" + (DisableOnDisconnect ? "1" : "0"));
                 sb.AppendLine("StartWithWindows=" + (StartWithWindows ? "1" : "0"));
                 sb.AppendLine("DebugLogging=" + (DebugLogging ? "1" : "0"));
+                sb.AppendLine("OnDelaySeconds=" + OnDelaySeconds);
+                sb.AppendLine("OffDelaySeconds=" + OffDelaySeconds);
                 sb.AppendLine("Mode=" + Mode);
                 sb.AppendLine("CustomLauncherPath=" + CustomLauncherPath);
                 sb.AppendLine("SteamWithFse=" + (SteamWithFse ? "1" : "0"));
@@ -610,6 +641,10 @@ namespace CouchMode
                 sb.AppendLine("TweakPowerPlan=" + (TweakPowerPlan ? "1" : "0"));
                 sb.AppendLine("PowerSchemeGuid=" + PowerSchemeGuid);
                 sb.AppendLine("TweakVisualEffects=" + (TweakVisualEffects ? "1" : "0"));
+                sb.AppendLine("PowerPlanPluggedInOnly=" + (PowerPlanPluggedInOnly ? "1" : "0"));
+                sb.AppendLine("GameMode=" + GameMode);
+                sb.AppendLine("CloseTimeoutSeconds=" + CloseTimeoutSeconds);
+                sb.AppendLine("LaunchStaggerSeconds=" + LaunchStaggerSeconds);
                 sb.AppendLine("DisplayOnXbox=" + DisplayOnXbox);
                 sb.AppendLine("DisplayOnExit=" + DisplayOnExit);
                 File.WriteAllText(ConfigPath, sb.ToString());
@@ -684,6 +719,18 @@ namespace CouchMode
     }
 
     // ---------------------------------------------------------------------
+    //  Lightweight shared state for the settings dialog's live status panel.
+    //  Privacy: holds only counts/flags and a short action label, never window
+    //  titles or file paths.
+    // ---------------------------------------------------------------------
+    static class AppStatus
+    {
+        public static volatile string LastAction = "(none yet)";
+        public static int Baseline;
+        public static volatile bool AutomationOn = true;
+    }
+
+    // ---------------------------------------------------------------------
     //  Tray application
     // ---------------------------------------------------------------------
     class TrayContext : ApplicationContext
@@ -691,10 +738,14 @@ namespace CouchMode
         readonly NotifyIcon tray;
         readonly DeviceWatcher watcher;
         readonly System.Windows.Forms.Timer debounce;
+        readonly System.Windows.Forms.Timer pending; // delayed/grace mode switch
         readonly Control sink; // marshals work back onto the UI thread
         readonly Icon iconActive;
         readonly Icon iconIdle;
         readonly ToolStripMenuItem miActive;
+        ToolStripMenuItem miStartup;
+        bool pendingTarget;
+        bool pendingActive;
 
         Settings settings;
         int prevCount;
@@ -727,6 +778,13 @@ namespace CouchMode
             menu.Items.Add(header);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(miActive);
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(new ToolStripMenuItem("Turn Xbox mode on now", null, delegate { RunSetMode(true); }));
+            menu.Items.Add(new ToolStripMenuItem("Turn Xbox mode off now", null, delegate { RunSetMode(false); }));
+            miStartup = new ToolStripMenuItem("Start with Windows", null, OnToggleStartup);
+            miStartup.Checked = settings.StartWithWindows;
+            menu.Items.Add(miStartup);
+            menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add(new ToolStripMenuItem("Settings…", null, OnSettings));
             menu.Items.Add(new ToolStripMenuItem("Open Log File", null, OnOpenLog));
             menu.Items.Add(new ToolStripMenuItem("About…", null, OnAbout));
@@ -747,7 +805,13 @@ namespace CouchMode
             debounce.Interval = 1000;
             debounce.Tick += OnDebounceTick;
 
+            // One-shot timer that performs the actual switch after the user's
+            // configured on/off delay (the off delay doubles as a grace period).
+            pending = new System.Windows.Forms.Timer();
+            pending.Tick += OnPendingTick;
+
             baseline = prevCount = Native.ControllerCount();
+            AppStatus.Baseline = baseline;
             Log.Write(string.Format("Started (event-driven). Controllers={0} (baseline), XboxMode={1}, Debug={2}",
                 prevCount, Native.IsXboxModeOn() ? "ON" : "OFF", Log.Verbose));
             if (Log.Verbose) Log.Write(Diagnostics.Snapshot(baseline));
@@ -792,17 +856,55 @@ namespace CouchMode
 
             if (isAbove && !wasAbove && settings.EnableOnConnect)
             {
-                Log.Write(string.Format("Controller connected ({0} -> {1}, baseline {2}) -> entering Xbox mode.", prevCount, count, baseline));
-                RunSetMode(true);
+                Log.Write(string.Format("Controller connected ({0} -> {1}, baseline {2}).", prevCount, count, baseline));
+                SchedulePending(true, settings.OnDelaySeconds);
             }
             else if (!isAbove && wasAbove && settings.DisableOnDisconnect)
             {
-                Log.Write(string.Format("Controller disconnected ({0} -> {1}, baseline {2}) -> exiting Xbox mode.", prevCount, count, baseline));
-                RunSetMode(false);
+                Log.Write(string.Format("Controller disconnected ({0} -> {1}, baseline {2}).", prevCount, count, baseline));
+                SchedulePending(false, settings.OffDelaySeconds);
             }
 
             prevCount = count;
             UpdateIcon();
+        }
+
+        // Schedules the actual mode switch after the configured delay. A later
+        // opposite edge simply reschedules, so a brief disconnect+reconnect (or
+        // vice versa) cancels the earlier intent before it fires.
+        void SchedulePending(bool target, int seconds)
+        {
+            pendingTarget = target;
+            pendingActive = true;
+            pending.Stop();
+            pending.Interval = Math.Max(1, seconds * 1000);
+            pending.Start();
+            if (seconds > 0)
+                Log.Debug(string.Format("Pending {0} in {1}s.", target ? "ON" : "OFF", seconds));
+        }
+
+        void OnPendingTick(object sender, EventArgs e)
+        {
+            pending.Stop();
+            if (!pendingActive) return;
+            pendingActive = false;
+
+            // Re-verify the controller state still matches the intent. This one
+            // check absorbs brief disconnects (the grace period) without any
+            // extra bookkeeping: if the state reverted during the wait, skip.
+            bool stillAbove;
+            try { stillAbove = Native.ControllerCount() > baseline; }
+            catch { stillAbove = pendingTarget; }
+
+            if (pendingTarget == stillAbove)
+            {
+                Log.Write(pendingTarget ? "Entering Xbox mode." : "Exiting Xbox mode.");
+                RunSetMode(pendingTarget);
+            }
+            else
+            {
+                Log.Debug("Pending action cancelled (controller state reverted during delay).");
+            }
         }
 
         // Toggle work runs on a background thread so the UI/tray never freezes.
@@ -847,11 +949,19 @@ namespace CouchMode
             // the mode back off right after the user accepts, or override a
             // deliberate "Stay on desktop" choice.
             int timeout = want ? 20000 : 4000;
-            if (WaitFor(want, timeout)) { Log.Write(want ? "Xbox mode ON." : "Xbox mode OFF."); return; }
+            if (WaitFor(want, timeout))
+            {
+                Log.Write(want ? "Xbox mode ON." : "Xbox mode OFF.");
+                AppStatus.LastAction = string.Format("{0:HH:mm:ss}  {1}",
+                    DateTime.Now, want ? "Entered Xbox mode" : "Returned to desktop");
+                return;
+            }
 
             Log.Write(want
                 ? "Xbox mode did not turn on (prompt dismissed or still open)."
                 : "Xbox mode did not turn off.");
+            AppStatus.LastAction = string.Format("{0:HH:mm:ss}  {1}",
+                DateTime.Now, want ? "Xbox mode did not turn on" : "Xbox mode did not turn off");
             if (Log.Verbose) Log.Write("Xbox windows at this point:" + Environment.NewLine + Native.DescribeXboxMode());
         }
 
@@ -885,9 +995,20 @@ namespace CouchMode
         {
             automationOn = !automationOn;
             miActive.Checked = automationOn;
+            AppStatus.AutomationOn = automationOn;
             Log.Debug("Automation " + (automationOn ? "resumed." : "paused."));
             if (automationOn) prevCount = Native.ControllerCount();
+            else { pending.Stop(); pendingActive = false; }
             UpdateIcon();
+        }
+
+        void OnToggleStartup(object sender, EventArgs e)
+        {
+            settings.StartWithWindows = !settings.StartWithWindows;
+            miStartup.Checked = settings.StartWithWindows;
+            Startup.Apply(settings.StartWithWindows);
+            settings.Save();
+            Log.Debug("Start with Windows " + (settings.StartWithWindows ? "enabled." : "disabled."));
         }
 
         bool settingsOpen;
@@ -905,6 +1026,7 @@ namespace CouchMode
                         settings.Save();
                         Log.Verbose = settings.DebugLogging;
                         Startup.Apply(settings.StartWithWindows);
+                        miStartup.Checked = settings.StartWithWindows;
                         Log.Debug("Settings saved.");
                     }
                 }
@@ -935,6 +1057,7 @@ namespace CouchMode
         void OnExit(object sender, EventArgs e)
         {
             debounce.Stop();
+            if (pending != null) pending.Stop();
             if (watcher != null) watcher.Dispose();
             if (sink != null) sink.Dispose();
             tray.Visible = false;
@@ -942,30 +1065,69 @@ namespace CouchMode
             ExitThread();
         }
 
-        // Draws the same minimal gamepad as the exe icon (see generate-assets.ps1).
-        // Green when active, grey when paused; white details.
+        static Bitmap couchSrc;
+        static bool couchSrcTried;
+
+        // Loads the couch artwork embedded in the exe (the same source the build
+        // uses for the app icon), so the tray icon matches the app icon exactly.
+        static Bitmap CouchSource()
+        {
+            if (couchSrcTried) return couchSrc;
+            couchSrcTried = true;
+            try
+            {
+                Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("couch-src.png");
+                if (s != null) using (s) couchSrc = new Bitmap(s);
+            }
+            catch { couchSrc = null; }
+            return couchSrc;
+        }
+
+        // Tray icon: the couch recoloured to the brand colour when active, grey when
+        // paused (alpha preserved so anti-aliased edges stay smooth). Falls back to a
+        // simple drawn couch if the embedded artwork is missing.
         static Icon MakeIcon(bool active)
         {
-            using (Bitmap bmp = new Bitmap(32, 32))
-            using (Graphics g = Graphics.FromImage(bmp))
+            Color fill = active ? Color.FromArgb(16, 124, 16) : Color.FromArgb(110, 110, 110);
+            const int S = 32;
+            Bitmap src = CouchSource();
+            Bitmap bmp = new Bitmap(S, S);
+            try
             {
-                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                g.Clear(Color.Transparent);
-
-                // Couch filling the canvas (no background square) so it stays clear
-                // at tiny tray sizes. Blue when active, grey when paused.
-                Color fill = active ? Color.FromArgb(16, 124, 16) : Color.FromArgb(110, 110, 110);
-                using (SolidBrush b = new SolidBrush(fill))
+                using (Graphics g = Graphics.FromImage(bmp))
                 {
-                    using (var back = RoundRect(6f, 8f, 20f, 10f, 4f)) g.FillPath(b, back);    // backrest
-                    using (var armL = RoundRect(2f, 12f, 7f, 12f, 3.5f)) g.FillPath(b, armL);  // left arm
-                    using (var armR = RoundRect(23f, 12f, 7f, 12f, 3.5f)) g.FillPath(b, armR); // right arm
-                    using (var seat = RoundRect(4f, 16f, 24f, 8f, 3f)) g.FillPath(b, seat);    // seat
-                    g.FillRectangle(b, 5f, 23f, 3f, 3.5f);    // left leg
-                    g.FillRectangle(b, 24f, 23f, 3f, 3.5f);   // right leg
+                    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    g.Clear(Color.Transparent);
+                    if (src != null)
+                    {
+                        g.DrawImage(src, 1, 1, S - 2, S - 2);
+                    }
+                    else
+                    {
+                        // Fallback: the previous hand-drawn couch silhouette.
+                        using (SolidBrush b = new SolidBrush(fill))
+                        {
+                            using (var back = RoundRect(6f, 8f, 20f, 10f, 4f)) g.FillPath(b, back);
+                            using (var armL = RoundRect(2f, 12f, 7f, 12f, 3.5f)) g.FillPath(b, armL);
+                            using (var armR = RoundRect(23f, 12f, 7f, 12f, 3.5f)) g.FillPath(b, armR);
+                            using (var seat = RoundRect(4f, 16f, 24f, 8f, 3f)) g.FillPath(b, seat);
+                            g.FillRectangle(b, 5f, 23f, 3f, 3.5f);
+                            g.FillRectangle(b, 24f, 23f, 3f, 3.5f);
+                        }
+                        return Icon.FromHandle(bmp.GetHicon());
+                    }
                 }
+                // Recolour every opaque pixel to the brand/grey colour.
+                for (int y = 0; y < S; y++)
+                    for (int x = 0; x < S; x++)
+                    {
+                        Color p = bmp.GetPixel(x, y);
+                        if (p.A > 0) bmp.SetPixel(x, y, Color.FromArgb(p.A, fill.R, fill.G, fill.B));
+                    }
                 return Icon.FromHandle(bmp.GetHicon());
             }
+            finally { bmp.Dispose(); }
         }
 
         static System.Drawing.Drawing2D.GraphicsPath RoundRect(float x, float y, float w, float h, float r)
@@ -996,12 +1158,15 @@ namespace CouchMode
     {
         readonly CheckBox cbConnect, cbDisconnect, cbStartup, cbDebug;
         readonly CheckBox cbForce, cbReopen, cbCloseLaunched;
-        readonly CheckBox cbDnd, cbGameDvr, cbPower, cbVisual;
+        readonly CheckBox cbDnd, cbGameDvr, cbPower, cbVisual, cbPowerPlugged;
         readonly ListBox lstClose, lstLaunchEnter;
-        readonly ComboBox cmbPower, cmbDispXbox, cmbDispExit, cmbMode;
+        readonly ComboBox cmbPower, cmbDispXbox, cmbDispExit, cmbMode, cmbGameMode;
         readonly TextBox txtCustomLauncher;
         readonly Button btnBrowseLauncher;
         readonly CheckBox cbSteamFse;
+        readonly NumericUpDown numOnDelay, numOffDelay, numCloseTimeout, numLaunchStagger;
+        readonly Label lblStat1, lblStat2;
+        readonly System.Windows.Forms.Timer statusTimer;
         readonly List<string> schemeGuids = new List<string>();
         public Settings Result;
 
@@ -1011,6 +1176,14 @@ namespace CouchMode
             new string[] { "Xbox mode (full screen experience)", "xbox" },
             new string[] { "Steam Big Picture", "steambp" },
             new string[] { "Custom launcher", "custom" },
+        };
+
+        // Windows Game Mode dropdown options: (label, stored value).
+        static readonly string[][] GameModeOptions = new string[][]
+        {
+            new string[] { "Leave as-is", "" },
+            new string[] { "Turn on", "on" },
+            new string[] { "Turn off", "off" },
         };
 
         // Display dropdown options: (label, stored value).
@@ -1031,20 +1204,31 @@ namespace CouchMode
             StartPosition = FormStartPosition.CenterScreen;
             MaximizeBox = false;
             MinimizeBox = false;
-            ClientSize = new Size(440, 470);
+            ClientSize = new Size(440, 530);
 
             TabControl tabs = new TabControl();
-            tabs.SetBounds(8, 8, 424, 410);
+            tabs.SetBounds(8, 8, 424, 470);
 
             // ---- General tab ----
             TabPage tabGeneral = new TabPage("General");
-            cbConnect = Check("Enter big-screen mode when a controller connects", current.EnableOnConnect, 16, 16);
-            cbDisconnect = Check("Exit when all controllers disconnect", current.DisableOnDisconnect, 16, 44);
 
-            Label mlbl = Lbl("When a controller connects, open:", 16, 80);
+            // Live status block, refreshed by statusTimer while the dialog is open.
+            GroupBox grpStatus = new GroupBox();
+            grpStatus.Text = "Status";
+            grpStatus.SetBounds(12, 6, 398, 58);
+            lblStat1 = new Label(); lblStat1.SetBounds(10, 18, 380, 16);
+            lblStat2 = new Label(); lblStat2.SetBounds(10, 36, 380, 16);
+            lblStat2.ForeColor = SystemColors.GrayText;
+            grpStatus.Controls.Add(lblStat1);
+            grpStatus.Controls.Add(lblStat2);
+
+            cbConnect = Check("Turn on when a controller connects", current.EnableOnConnect, 16, 76);
+            cbDisconnect = Check("Turn off when all controllers disconnect", current.DisableOnDisconnect, 16, 104);
+
+            Label mlbl = Lbl("When CouchMode turns on, open:", 16, 140);
             cmbMode = new ComboBox();
             cmbMode.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbMode.SetBounds(16, 100, 300, 24);
+            cmbMode.SetBounds(16, 160, 300, 24);
             int msel = 0;
             for (int i = 0; i < ModeOptions.Length; i++)
             {
@@ -1054,9 +1238,9 @@ namespace CouchMode
             cmbMode.SelectedIndex = msel;
 
             txtCustomLauncher = new TextBox();
-            txtCustomLauncher.SetBounds(16, 132, 300, 22);
+            txtCustomLauncher.SetBounds(16, 192, 300, 22);
             txtCustomLauncher.Text = current.CustomLauncherPath;
-            btnBrowseLauncher = Btn("Browse…", 322, 131);
+            btnBrowseLauncher = Btn("Browse…", 322, 191);
             btnBrowseLauncher.Click += delegate
             {
                 using (OpenFileDialog d = new OpenFileDialog())
@@ -1070,7 +1254,7 @@ namespace CouchMode
 
             // Shown only for Steam Big Picture mode (shares the row with the custom path).
             cbSteamFse = Check("Also enable Xbox full screen experience (better performance)",
-                current.SteamWithFse, 16, 134);
+                current.SteamWithFse, 16, 194);
 
             // Steam Big Picture / custom launcher are Pro: lock the chooser to Xbox
             // mode in the free build and offer an unlock link.
@@ -1082,13 +1266,34 @@ namespace CouchMode
                 modeUpsell = new LinkLabel();
                 modeUpsell.Text = "Steam Big Picture & custom launcher (Pro - coming soon)";
                 modeUpsell.LinkColor = Color.FromArgb(16, 124, 16);
-                modeUpsell.SetBounds(16, 132, 380, 20);
+                modeUpsell.SetBounds(16, 192, 380, 20);
                 modeUpsell.LinkClicked += delegate { Pro.ShowUpsell(this); };
             }
 
-            cbStartup = Check("Start automatically with Windows", current.StartWithWindows, 16, 168);
-            cbDebug = Check("Debug logging (verbose activity log)", current.DebugLogging, 16, 196);
+            cbStartup = Check("Start automatically with Windows", current.StartWithWindows, 16, 228);
 
+            // Advanced (collapsed by default): timing knobs and debug logging.
+            LinkLabel advLink = new LinkLabel();
+            advLink.Text = "Advanced settings";
+            advLink.SetBounds(16, 258, 200, 18);
+            GroupBox grpAdv = new GroupBox();
+            grpAdv.Text = "Advanced";
+            grpAdv.SetBounds(12, 280, 398, 100);
+            grpAdv.Visible = false;
+            Label la1 = new Label(); la1.Text = "Wait before turning on (seconds):"; la1.SetBounds(10, 24, 220, 18);
+            numOnDelay = new NumericUpDown(); numOnDelay.SetBounds(238, 22, 56, 22);
+            numOnDelay.Minimum = 0; numOnDelay.Maximum = 30; numOnDelay.Value = Clamp(current.OnDelaySeconds, 0, 30);
+            Label la2 = new Label(); la2.Text = "Wait before turning off (seconds):"; la2.SetBounds(10, 50, 220, 18);
+            numOffDelay = new NumericUpDown(); numOffDelay.SetBounds(238, 48, 56, 22);
+            numOffDelay.Minimum = 0; numOffDelay.Maximum = 60; numOffDelay.Value = Clamp(current.OffDelaySeconds, 0, 60);
+            cbDebug = Check("Debug logging (verbose activity log)", current.DebugLogging, 10, 74);
+            cbDebug.SetBounds(10, 74, 370, 22);
+            grpAdv.Controls.Add(la1); grpAdv.Controls.Add(numOnDelay);
+            grpAdv.Controls.Add(la2); grpAdv.Controls.Add(numOffDelay);
+            grpAdv.Controls.Add(cbDebug);
+            advLink.LinkClicked += delegate { grpAdv.Visible = !grpAdv.Visible; };
+
+            tabGeneral.Controls.Add(grpStatus);
             tabGeneral.Controls.Add(cbConnect);
             tabGeneral.Controls.Add(cbDisconnect);
             tabGeneral.Controls.Add(mlbl);
@@ -1098,8 +1303,16 @@ namespace CouchMode
             tabGeneral.Controls.Add(cbSteamFse);
             if (modeUpsell != null) tabGeneral.Controls.Add(modeUpsell);
             tabGeneral.Controls.Add(cbStartup);
-            tabGeneral.Controls.Add(cbDebug);
+            tabGeneral.Controls.Add(advLink);
+            tabGeneral.Controls.Add(grpAdv);
             UpdateModeEnabled();
+
+            // Live status panel: poll lightweight state once a second while open.
+            statusTimer = new System.Windows.Forms.Timer();
+            statusTimer.Interval = 1000;
+            statusTimer.Tick += delegate { RefreshStatus(); };
+            Load += delegate { RefreshStatus(); statusTimer.Start(); };
+            FormClosed += delegate { statusTimer.Stop(); statusTimer.Dispose(); };
 
             // ---- Resource control tab ----
             // Two simple sections: what happens when CouchMode turns ON (close /
@@ -1129,12 +1342,18 @@ namespace CouchMode
             Button remEnter = Btn("Remove", 306, 228);
             remEnter.Click += delegate { RemoveFrom(lstLaunchEnter); };
 
-            Label offHdr = Lbl("When CouchMode turns OFF (controllers disconnected)", 12, 268);
-            offHdr.Font = new Font(offHdr.Font, FontStyle.Bold);
-            cbReopen = Check("Reopen the apps that were closed", current.ReopenClosedOnExit, 16, 296);
-            cbCloseLaunched = Check("Close the apps that were launched", current.CloseLaunchedOnExit, 16, 322);
+            Label staggerLbl = Lbl("Stagger launches (seconds):", 12, 246);
+            numLaunchStagger = new NumericUpDown();
+            numLaunchStagger.SetBounds(206, 244, 56, 22);
+            numLaunchStagger.Minimum = 0; numLaunchStagger.Maximum = 10;
+            numLaunchStagger.Value = Clamp(current.LaunchStaggerSeconds, 0, 10);
 
-            cbForce = Check("Force close if an app does not close gracefully", current.ForceClose, 16, 356);
+            Label offHdr = Lbl("When CouchMode turns OFF (controllers disconnected)", 12, 278);
+            offHdr.Font = new Font(offHdr.Font, FontStyle.Bold);
+            cbReopen = Check("Reopen the apps that were closed", current.ReopenClosedOnExit, 16, 304);
+            cbCloseLaunched = Check("Close the apps that were launched", current.CloseLaunchedOnExit, 16, 328);
+
+            cbForce = Check("Force close apps after timeout", current.ForceClose, 16, 354);
             cbForce.CheckedChanged += delegate
             {
                 if (cbForce.Checked)
@@ -1144,7 +1363,16 @@ namespace CouchMode
                         "Force close", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                     if (r != DialogResult.Yes) cbForce.Checked = false;
                 }
+                numCloseTimeout.Enabled = cbForce.Checked;
             };
+            Label toLbl = Lbl("Force close timeout (seconds):", 36, 382);
+            numCloseTimeout = new NumericUpDown();
+            numCloseTimeout.SetBounds(266, 380, 56, 22);
+            numCloseTimeout.Minimum = 1; numCloseTimeout.Maximum = 60;
+            numCloseTimeout.Value = Clamp(current.CloseTimeoutSeconds, 1, 60);
+            numCloseTimeout.Enabled = cbForce.Checked;
+            Label toNote = Lbl("Ends an app only if it ignores the close request.", 36, 404);
+            toNote.ForeColor = SystemColors.GrayText;
 
             tabRes.Controls.Add(onHdr);
             tabRes.Controls.Add(Lbl("Apps to close (free memory):", 12, 32));
@@ -1157,38 +1385,60 @@ namespace CouchMode
             tabRes.Controls.Add(addEnter);
             tabRes.Controls.Add(addEnterRun);
             tabRes.Controls.Add(remEnter);
+            tabRes.Controls.Add(staggerLbl);
+            tabRes.Controls.Add(numLaunchStagger);
             tabRes.Controls.Add(offHdr);
             tabRes.Controls.Add(cbReopen);
             tabRes.Controls.Add(cbCloseLaunched);
             tabRes.Controls.Add(cbForce);
+            tabRes.Controls.Add(toLbl);
+            tabRes.Controls.Add(numCloseTimeout);
+            tabRes.Controls.Add(toNote);
 
-            // ---- Game tweaks tab ----
-            TabPage tabTweaks = new TabPage("Game tweaks");
+            // ---- Session tweaks tab ----
+            // Temporary, reversible adjustments while CouchMode is on.
+            TabPage tabTweaks = new TabPage("Session tweaks");
             cbDnd = Check("Silence notifications (Do Not Disturb)", current.TweakDnd, 12, 12);
-            cbGameDvr = Check("Disable Game Bar background recording", current.TweakGameDvr, 12, 40);
-            cbVisual = Check("Turn off transparency and animations", current.TweakVisualEffects, 12, 68);
+            cbGameDvr = Check("Disable Game Bar background recording", current.TweakGameDvr, 12, 38);
+            cbVisual = Check("Turn off transparency and animations", current.TweakVisualEffects, 12, 64);
 
-            cbPower = Check("Switch power plan to:", current.TweakPowerPlan, 12, 98);
-            cbPower.SetBounds(12, 98, 150, 22);
+            Label gmLbl = Lbl("Windows Game Mode:", 12, 92);
+            cmbGameMode = new ComboBox();
+            cmbGameMode.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbGameMode.SetBounds(150, 90, 160, 24);
+            int gmSel = 0;
+            for (int i = 0; i < GameModeOptions.Length; i++)
+            {
+                cmbGameMode.Items.Add(GameModeOptions[i][0]);
+                if (GameModeOptions[i][1] == (current.GameMode ?? "")) gmSel = i;
+            }
+            cmbGameMode.SelectedIndex = gmSel;
+
+            cbPower = Check("Switch power plan to:", current.TweakPowerPlan, 12, 124);
+            cbPower.SetBounds(12, 124, 150, 22);
             cmbPower = new ComboBox();
             cmbPower.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbPower.SetBounds(166, 96, 230, 24);
+            cmbPower.SetBounds(166, 122, 230, 24);
             // Power plan list is a Pro feature; the tab is locked in the free build,
             // so the combo is left empty here.
+            cbPowerPlugged = Check("Only when plugged in (skip on battery)", current.PowerPlanPluggedInOnly, 30, 150);
 
-            Label dlbl1 = Lbl("Display when Xbox mode turns on:", 12, 134);
-            cmbDispXbox = DisplayCombo(current.DisplayOnXbox, 12, 154);
-            Label dlbl2 = Lbl("Display when it turns off:", 12, 188);
-            cmbDispExit = DisplayCombo(current.DisplayOnExit, 12, 208);
+            Label dlbl1 = Lbl("Display when CouchMode turns on:", 12, 180);
+            cmbDispXbox = DisplayCombo(current.DisplayOnXbox, 12, 200);
+            Label dlbl2 = Lbl("Display when it turns off:", 12, 234);
+            cmbDispExit = DisplayCombo(current.DisplayOnExit, 12, 254);
 
-            Label tnote = Lbl("Applied when Xbox mode turns on, reverted when it turns off.", 12, 248);
+            Label tnote = Lbl("These changes are restored when CouchMode turns off.", 12, 290);
             tnote.ForeColor = SystemColors.GrayText;
 
             tabTweaks.Controls.Add(cbDnd);
             tabTweaks.Controls.Add(cbGameDvr);
             tabTweaks.Controls.Add(cbVisual);
+            tabTweaks.Controls.Add(gmLbl);
+            tabTweaks.Controls.Add(cmbGameMode);
             tabTweaks.Controls.Add(cbPower);
             tabTweaks.Controls.Add(cmbPower);
+            tabTweaks.Controls.Add(cbPowerPlugged);
             tabTweaks.Controls.Add(dlbl1);
             tabTweaks.Controls.Add(cmbDispXbox);
             tabTweaks.Controls.Add(dlbl2);
@@ -1210,10 +1460,10 @@ namespace CouchMode
             Populate(lstLaunchEnter, current.LaunchOnEnterList);
 
             // Right-aligned with a margin from the window edge (client width 440).
-            Button ok = Btn("Save", 244, 430);
+            Button ok = Btn("Save", 244, 486);
             ok.DialogResult = DialogResult.OK;
             ok.Click += OnSave;
-            Button cancel = Btn("Cancel", 340, 430);
+            Button cancel = Btn("Cancel", 340, 486);
             cancel.DialogResult = DialogResult.Cancel;
 
             Controls.Add(tabs);
@@ -1231,7 +1481,9 @@ namespace CouchMode
         }
         static Label Lbl(string text, int x, int y)
         {
-            Label l = new Label(); l.Text = text; l.SetBounds(x, y, 384, 18);
+            // AutoSize so the label hugs its text and never overlaps (and hides) a
+            // control placed to its right on the same row.
+            Label l = new Label(); l.AutoSize = true; l.Text = text; l.Location = new Point(x, y);
             return l;
         }
         static Button Btn(string text, int x, int y)
@@ -1257,6 +1509,29 @@ namespace CouchMode
         {
             int i = c.SelectedIndex;
             return (i >= 0 && i < DispOptions.Length) ? DispOptions[i][1] : "";
+        }
+
+        static decimal Clamp(int v, int min, int max)
+        {
+            if (v < min) v = min;
+            if (v > max) v = max;
+            return v;
+        }
+
+        // Updates the General-tab status block. Privacy: only counts/flags and a
+        // short action label, never window titles or file paths.
+        void RefreshStatus()
+        {
+            int count = 0; bool on = false;
+            try { count = Native.ControllerCount(); } catch { }
+            try { on = Native.IsXboxModeOn(); } catch { }
+            int baseline = AppStatus.Baseline;
+            string ctrl = (count > baseline)
+                ? string.Format("connected ({0})", count)
+                : string.Format("disconnected (baseline {0})", baseline);
+            lblStat1.Text = string.Format("Controller: {0}     CouchMode: {1}{2}",
+                ctrl, on ? "On" : "Off", AppStatus.AutomationOn ? "" : "   (paused)");
+            lblStat2.Text = "Last action: " + AppStatus.LastAction;
         }
 
         // Disables every control on a Pro tab and adds a clickable unlock banner.
@@ -1292,10 +1567,7 @@ namespace CouchMode
                 d.Filter = "Programs and shortcuts (*.exe;*.lnk)|*.exe;*.lnk|All files (*.*)|*.*";
                 d.Multiselect = true;
                 if (d.ShowDialog(this) == DialogResult.OK)
-                {
-                    foreach (string f in d.FileNames)
-                        if (!Contains(lb, f)) lb.Items.Add(new AppItem(f));
-                }
+                    AddPaths(lb, d.FileNames);
             }
         }
 
@@ -1304,11 +1576,27 @@ namespace CouchMode
             using (RunningAppsForm f = new RunningAppsForm())
             {
                 if (f.ShowDialog(this) == DialogResult.OK)
-                {
-                    foreach (string p in f.SelectedPaths)
-                        if (!Contains(lb, p)) lb.Items.Add(new AppItem(p));
-                }
+                    AddPaths(lb, f.SelectedPaths.ToArray());
             }
+        }
+
+        // Adds paths to a list, skipping ones already there or already in the OTHER
+        // list (an app cannot be both closed and launched). Warns once if any were
+        // skipped for being in the other list.
+        void AddPaths(ListBox lb, string[] paths)
+        {
+            ListBox other = (lb == lstClose) ? lstLaunchEnter : lstClose;
+            bool clash = false;
+            foreach (string p in paths)
+            {
+                if (Contains(other, p)) { clash = true; continue; }
+                if (!Contains(lb, p)) lb.Items.Add(new AppItem(p));
+            }
+            if (clash)
+                MessageBox.Show(this,
+                    "Some apps were skipped because they are already in the other list. "
+                    + "An app cannot be both closed and launched.",
+                    "Already listed", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         static void RemoveFrom(ListBox lb)
@@ -1354,11 +1642,15 @@ namespace CouchMode
             s.DisableOnDisconnect = cbDisconnect.Checked;
             s.StartWithWindows = cbStartup.Checked;
             s.DebugLogging = cbDebug.Checked;
+            s.OnDelaySeconds = (int)numOnDelay.Value;
+            s.OffDelaySeconds = (int)numOffDelay.Value;
             int mi = cmbMode.SelectedIndex;
             s.Mode = (mi >= 0 && mi < ModeOptions.Length) ? ModeOptions[mi][1] : "xbox";
             s.CustomLauncherPath = txtCustomLauncher.Text.Trim();
             s.SteamWithFse = cbSteamFse.Checked;
             s.ForceClose = cbForce.Checked;
+            s.CloseTimeoutSeconds = (int)numCloseTimeout.Value;
+            s.LaunchStaggerSeconds = (int)numLaunchStagger.Value;
             s.CloseList = Join(lstClose);
             s.LaunchOnEnterList = Join(lstLaunchEnter);
             s.ReopenClosedOnExit = cbReopen.Checked;
@@ -1366,8 +1658,11 @@ namespace CouchMode
             s.TweakDnd = cbDnd.Checked;
             s.TweakGameDvr = cbGameDvr.Checked;
             s.TweakPowerPlan = cbPower.Checked;
+            s.PowerPlanPluggedInOnly = cbPowerPlugged.Checked;
             int pi = cmbPower.SelectedIndex;
             s.PowerSchemeGuid = (pi >= 0 && pi < schemeGuids.Count) ? schemeGuids[pi] : "";
+            int gm = cmbGameMode.SelectedIndex;
+            s.GameMode = (gm >= 0 && gm < GameModeOptions.Length) ? GameModeOptions[gm][1] : "";
             s.TweakVisualEffects = cbVisual.Checked;
             s.DisplayOnXbox = DisplayValue(cmbDispXbox);
             s.DisplayOnExit = DisplayValue(cmbDispExit);

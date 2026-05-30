@@ -11,10 +11,10 @@ your PC enters Xbox mode; turn the controller off and it returns to the desktop.
 
 No more reaching for the mouse. Let the controller drive the experience.
 
-Windows 11 can already enter Xbox mode at startup (mainly on handhelds) or with the
-`Win+F11` shortcut, but as of mid-2026 there is no built-in option to switch
-automatically based on your controller's power state. CouchMode fills that gap.
-If Microsoft adds it natively one day, even better.
+Windows 11 can enter the Xbox full screen experience at startup (mainly on handhelds)
+or with the `Win+F11` shortcut on supported systems. CouchMode focuses on the one
+piece of convenience that is missing: switching automatically based on your
+controller's connection state, and returning you to the desktop when it disconnects.
 
 ---
 
