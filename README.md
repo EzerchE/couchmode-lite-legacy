@@ -1,12 +1,12 @@
-# CouchMode
+# CouchMode Lite
 
 **Automatically enable Windows 11 Xbox mode (the full screen experience) when an Xbox controller connects, and turn it off when the controller disconnects.**
 
 ![CouchMode](assets/banner.png)
 
-CouchMode is a tiny system tray utility for Windows 11. The new
+CouchMode Lite is a tiny system tray utility for Windows 11. The new
 **Xbox full screen experience (FSE)** turns your PC into a console-like, big-screen
-gaming interface. CouchMode makes it automatic: power on your Xbox controller and
+gaming interface. CouchMode Lite makes it automatic: power on your Xbox controller and
 your PC enters Xbox mode; turn the controller off and it returns to the desktop.
 
 No more reaching for the mouse. Let the controller drive the experience.
@@ -61,7 +61,7 @@ controller's connection state, and returning you to the desktop when it disconne
 
 ## Usage
 
-Once running, CouchMode works automatically:
+Once running, CouchMode Lite works automatically:
 
 | Action | Result |
 | --- | --- |
@@ -82,7 +82,7 @@ Right-click the tray icon for options:
 | --- | --- | --- |
 | Enter Xbox mode when a controller connects | On | Switch to Xbox mode on controller power-on. |
 | Exit Xbox mode when all controllers disconnect | On | Return to desktop when the last controller powers off. |
-| Start automatically with Windows | Off | Launch CouchMode at sign-in. |
+| Start automatically with Windows | Off | Launch CouchMode Lite at sign-in. |
 | Debug logging | Off | Write a verbose activity log for troubleshooting. |
 
 Settings and logs are stored in `%AppData%\CouchMode\`.
@@ -118,9 +118,9 @@ It helps to know which version of Xbox mode your device has:
   (feature flags plus spoofing the device form factor and panel size), which is
   unofficial and can be unstable on multi-monitor or docked setups.
 
-CouchMode works with either level, because it only sends the official `Win+F11`
+CouchMode Lite works with either level, because it only sends the official `Win+F11`
 toggle that Windows itself uses. If you have the full handheld-style mode, the
-restart prompt still appears and CouchMode leaves that choice to you. Whether to
+restart prompt still appears and CouchMode Lite leaves that choice to you. Whether to
 force the full mode on a desktop is entirely your decision; this project does not
 perform or recommend any device spoofing.
 
@@ -136,7 +136,7 @@ Windows 11 machine.
 
 ## Privacy & security
 
-- **Fully offline.** CouchMode makes no network connections: no telemetry,
+- **Fully offline.** CouchMode Lite makes no network connections: no telemetry,
   no analytics, no data collection of any kind.
 - **No admin rights.** It only writes its own startup entry under
   `HKCU\…\Run` (when you enable *Start with Windows*) and its config/log under
@@ -164,10 +164,11 @@ Windows 11 machine.
 - Define custom **actions** to run when a controller disconnects.
 - Per-controller and per-profile rules.
 
-## CouchMode Pro (coming soon)
+## CouchMode Pro
 
-This free, open-source build automatically switches Xbox mode with your
-controller. **CouchMode Pro** (a separate build, coming soon) adds:
+This free, open-source **Lite** version provides the core functionality of automatically switching Xbox mode with your controller. It will always remain free and open source.
+
+For advanced features, check out **[CouchMode Pro](https://couchmode.app/)**, a separate premium app which adds:
 
 - **Resource control** — close apps to free RAM when you start playing and reopen
   them afterwards.
@@ -176,19 +177,18 @@ controller. **CouchMode Pro** (a separate build, coming soon) adds:
 - **Display switching** — switch to your TV/second screen on play, restore on exit.
 - **More modes** — open Steam Big Picture or a custom launcher instead of Xbox mode.
 
-In the free build these appear in Settings (Resource Control / Game Tweaks tabs)
-but are locked, as a preview. A Microsoft Store link will be added when Pro is out.
+In this free build, these features appear in Settings as a preview.
 
 ## Support
 
-CouchMode is free and open source. If it makes your gaming setup nicer, you can
+CouchMode Lite is free and open source. If it makes your gaming setup nicer, you can
 support development:
 
 - [GitHub Sponsors](https://github.com/sponsors/EzerchE)
 
 ## Disclaimer
 
-CouchMode is provided **"as is", without warranty of any kind**. It only sends
+CouchMode Lite is provided **"as is", without warranty of any kind**. It only sends
 the standard `Win+F11` shortcut and toggles its own startup entry, and it does not
 modify system files. That said, you use it at your own risk: the author is not
 liable for any damage, data loss, or other issues arising from its use (see the

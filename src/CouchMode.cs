@@ -18,8 +18,8 @@ using System.Threading;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-[assembly: AssemblyTitle("CouchMode")]
-[assembly: AssemblyProduct("CouchMode")]
+[assembly: AssemblyTitle("CouchMode Lite")]
+[assembly: AssemblyProduct("CouchMode Lite")]
 [assembly: AssemblyDescription("Automatically switches the Windows 11 Xbox full screen experience based on your controller.")]
 [assembly: AssemblyCompany("EzerchE")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 EzerchE. MIT License.")]
@@ -31,9 +31,9 @@ namespace CouchMode
 {
     static class Program
     {
-        public const string AppName = "CouchMode";
+        public const string AppName = "CouchMode Lite";
         public const string Version = "1.5.0-beta";
-        public const string RepoUrl = "https://github.com/EzerchE/CouchMode";
+        public const string RepoUrl = "https://github.com/EzerchE/couchmode-lite";
 
         [STAThread]
         static void Main()
@@ -71,7 +71,7 @@ namespace CouchMode
 
         // Store listing link, set once the Microsoft Store page exists. Empty for
         // now, so the upsell just says "coming soon" without opening anything.
-        public const string StoreUrl = "";
+        public const string StoreUrl = "https://couchmode.app/";
 
         public static void ShowUpsell(IWin32Window owner)
         {
@@ -82,7 +82,7 @@ namespace CouchMode
                 "Big Picture / custom launcher modes.";
             if (!string.IsNullOrEmpty(StoreUrl))
             {
-                msg += "\r\n\r\nOpen the Microsoft Store page?";
+                msg += "\r\n\r\nOpen the website to learn more?";
                 if (MessageBox.Show(owner, msg, "CouchMode Pro",
                         MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                 {
